@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from streamlit_javascript import st_javascript
 
 st.set_page_config(layout="centered", page_title="Heat Input Master")
 
@@ -145,8 +146,10 @@ btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
 
 with btn_left:
     if st.button("Save Data"):
+        local_time = st_javascript("new Date().toLocaleTimeString('ko-KR', {hour12: false})")
+        time_str = local_time if isinstance(local_time, str) and len(local_time) > 0 else datetime.now().strftime("%H:%M:%S")
         new_entry = {
-            "Time":       datetime.now().strftime("%H:%M:%S"),
+            "Time":       time_str,
             "Std":        standard,
             "Prc":        process,
             "HI":         round(HI, 3),

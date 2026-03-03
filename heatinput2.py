@@ -97,10 +97,10 @@ st.markdown("""
         align-items: center;
     }
     
-    /* 푸터 스타일 */
+    /* 푸터 스타일 - 왼쪽 정렬(flex-start)로 변경 */
     .footer {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         margin-top: 50px;
         border-top: 1px solid #ddd;
         padding-top: 20px;
@@ -180,11 +180,11 @@ with col_result:
         with w_cols[0]:
             m_row = st.columns([0.8, 1.2])
             with m_row[0]: st.markdown("**Min.**")
-            with m_row[1]: w_min = st.number_input("Min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
+            with m_row[1]: w_min = st.number_input("Min", value=0.96, step=0.01, format="%.2f", key="min_input", label_visibility="collapsed")
         with w_cols[1]:
             x_row = st.columns([0.8, 1.2])
             with x_row[0]: st.markdown("**Max.**")
-            with x_row[1]: w_max = st.number_input("Max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
+            with x_row[1]: w_max = st.number_input("Max", value=2.50, step=0.01, format="%.2f", key="max_input", label_visibility="collapsed")
     else:
         w_min, w_max = 0.0, 0.0
 
@@ -195,19 +195,19 @@ with col_result:
     
     if wps_mode == "Input":
         res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
-        # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치
+        # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치 (나란히 배치)
         res_cols = st.columns([0.5, 0.05, 0.45])
         with res_cols[0]:
             st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
         with res_cols[2]:
             st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
     else:
-        # No input 선택 시 PASS/FAIL 판정 안함 (결과값만 표시)
+        # No input 선택 시 결과값만 표시 (가로 폭 유지를 위해 빈 공간과 나란히 배치 가능)
         res_status = "N/A"
         st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
 
 # ======================================================
-# 3. 버튼 레이아웃 - Save Data / Export CSV (같은 줄 배치)
+# 3. 버튼 레이아웃 - Save Data / Export CSV (나란히 배치)
 # ======================================================
 st.write("")
 btn_row1 = st.columns([0.475, 0.05, 0.475])
@@ -231,7 +231,7 @@ with btn_row1[2]:
         st.button("📤 Export CSV", disabled=True)
 
 # ======================================================
-# 4. 히스토리 관리 (데이터 존재 시에만 표시)
+# 4. 히스토리 관리 (데이터 존재 시에만 표시, 나란히 배치)
 # ======================================================
 if st.session_state.history:
     st.write("")
@@ -247,7 +247,7 @@ if st.session_state.history:
     st.table(pd.DataFrame(st.session_state.history))
 
 # ======================================================
-# 5. Footer - 이메일만 표시
+# 5. Footer - 이메일 주소 왼쪽 끝으로 이동
 # ======================================================
 st.markdown(
     f'<div class="footer">'

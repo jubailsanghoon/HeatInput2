@@ -23,9 +23,9 @@ st.markdown("""
     .header img { height:40px; margin-right:10px; }
     .title { font-size:22px; font-weight:900; }
     .section-title { font-size:16px; font-weight:900; margin-top:12px; margin-bottom:8px; }
-    .result-box-pass { font-size:24px; font-weight:900; padding:12px; background:#90ee90; border:2px solid black; text-align:center; margin-bottom:8px; color:black !important; }
-    .result-box-fail { font-size:24px; font-weight:900; padding:12px; background:#ff7f00; border:2px solid black; text-align:center; margin-bottom:8px; color:white !important; }
-    .result-box-none { font-size:24px; font-weight:900; padding:12px; background:#ffffff; border:2px solid black; text-align:center; margin-bottom:8px; color:black !important; }
+    .result-box-pass { font-size:18px; font-weight:900; padding:8px; background:#90ee90; border:2px solid black; text-align:center; margin-bottom:8px; color:black !important; line-height:1.4; }
+    .result-box-fail { font-size:18px; font-weight:900; padding:8px; background:#ff7f00; border:2px solid black; text-align:center; margin-bottom:8px; color:white !important; line-height:1.4; }
+    .result-box-none { font-size:18px; font-weight:900; padding:8px; background:#ffffff; border:2px solid black; text-align:center; margin-bottom:8px; color:black !important; line-height:1.4; }
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
         height: 60px !important;
@@ -55,7 +55,7 @@ if 'history' not in st.session_state:
 st.markdown("""
 <div class="header">
 <img src="https://raw.githubusercontent.com/jubailsanghoon/Heatinput/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg">
-<div class="title">Heat Input Master</div>
+<div class="title">Heat Input Master(v.0.5)</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -109,7 +109,7 @@ with col_right:
     else:
         box_class = "result-box-none"
     st.markdown(
-        f'<div class="{box_class}">{HI:.3f}<br><span style="font-size:16px;">{status}</span></div>',
+        f'<div class="{box_class}">{HI:.3f} kJ/mm<br><span style="font-size:14px;">{status}</span></div>',
         unsafe_allow_html=True
     )
 
@@ -122,8 +122,8 @@ with opt_cols[1]:
 with opt_cols[2]:
     joint_no = st.text_input("Joint No.", value="", placeholder="Joint No.")
 
-st.markdown('<div class="section-title">Pass</div>', unsafe_allow_html=True)
-pass_type = st.radio("Pass", ["Root", "Fill"], horizontal=True, label_visibility="collapsed")
+st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True)
+pass_type = st.radio("Pass", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed")
 
 btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
 

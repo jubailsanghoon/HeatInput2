@@ -52,6 +52,29 @@ st.markdown("""
         align-items: center;
         gap: 0.5rem;
     }
+    /* 파일 업로더 흰색 고정 + 크기 축소 */
+    [data-testid="stFileUploader"] {
+        background-color: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        border-radius: 6px !important;
+        padding: 6px !important;
+    }
+    [data-testid="stFileUploader"] section {
+        background-color: #ffffff !important;
+        border: 1px dashed #aaaaaa !important;
+        padding: 8px !important;
+        min-height: unset !important;
+    }
+    [data-testid="stFileUploader"] section > div {
+        padding: 4px !important;
+    }
+    [data-testid="stFileUploaderDropzoneInstructions"] {
+        display: none !important;
+    }
+    /* 아이콘 버튼 높이 맞춤 */
+    div[data-testid="stButton"] button, div[data-testid="stDownloadButton"] button {
+        min-width: unset !important;
+    }
     /* 오버레이 */
     .overlay-backdrop {
         position: fixed; top:0; left:0; width:100%; height:100%;
@@ -156,13 +179,11 @@ elif wps_mode == "Preset":
     if 'show_import' not in st.session_state:
         st.session_state.show_import = False
 
-    p_cols = st.columns([1, 1])
+    p_cols = st.columns([0.15, 0.15, 0.7])
     with p_cols[0]:
-        if st.button("📂 Import TXT"):
+        if st.button("📂", help="Import TXT"):
             st.session_state.show_import = not st.session_state.show_import
-
     with p_cols[1]:
-        # Sample TXT 생성
         sample_lines = ["# WPS Preset - Heat Input Master"]
         sample_lines.append("# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.")
         sample_lines.append("# Pass: Root / Fill / Cap  |  최대 20행")
@@ -171,11 +192,12 @@ elif wps_mode == "Preset":
             for p in ["Root", "Fill", "Cap"]:
                 sample_lines.append(f"WPS-{i:03d}\t{p}\t0.00\t0.00")
         sample_txt = "\n".join(sample_lines).encode('utf-8')
-        st.download_button("📄 Sample TXT", data=sample_txt,
-                           file_name="WPS_sample.txt", mime="text/plain")
+        st.download_button("📄", data=sample_txt,
+                           file_name="WPS_sample.txt", mime="text/plain",
+                           help="Sample TXT 다운로드")
 
     if st.session_state.show_import:
-        uploaded = st.file_uploader("TXT 파일 선택", type="txt", label_visibility="visible")
+        uploaded = st.file_uploader("TXT", type="txt", label_visibility="collapsed")
         if uploaded:
             try:
                 lines = uploaded.read().decode('utf-8').splitlines()
@@ -213,23 +235,24 @@ elif wps_mode == "Preset":
         else:
             st.info("아래 목록에서 WPS를 선택하세요")
 
-        with st.expander("📋 View WPS List", expanded=False):
-            hdr = st.columns([2, 1, 1, 1, 0.8])
+        if 'expander_open' not in st.session_state:
+            st.session_state.expander_open = False
+
+        with st.expander("📋 View WPS List", expanded=st.session_state.expander_open):
+            hdr = st.columns([3, 2, 1.2])
             hdr[0].markdown("**WPS No.**")
             hdr[1].markdown("**Pass**")
-            hdr[2].markdown("**Min**")
-            hdr[3].markdown("**Max**")
-            hdr[4].markdown("")
+            hdr[2].markdown("**Select**")
+            st.markdown('<hr style="margin:4px 0">', unsafe_allow_html=True)
             for idx, item in enumerate(presets):
-                row = st.columns([2, 1, 1, 1, 0.8])
+                row = st.columns([3, 2, 1.2])
                 row[0].write(item["wps_no"])
                 row[1].write(item["pass"])
-                row[2].write(item["hi_min"])
-                row[3].write(item["hi_max"])
-                if row[4].button("선택", key=f"sel_{idx}"):
-                    st.session_state.preset_min   = item["hi_min"]
-                    st.session_state.preset_max   = item["hi_max"]
-                    st.session_state.preset_label = f"{item['wps_no']} / {item['pass']}"
+                if row[2].button("✔", key=f"sel_{idx}"):
+                    st.session_state.preset_min    = item["hi_min"]
+                    st.session_state.preset_max    = item["hi_max"]
+                    st.session_state.preset_label  = f"{item['wps_no']} / {item['pass']}"
+                    st.session_state.expander_open = False
                     st.rerun()
 
         min_range = st.session_state.preset_min

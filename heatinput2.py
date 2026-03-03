@@ -208,6 +208,7 @@ btn_row1 = st.columns([1, 1])
 
 with btn_row1[0]:
     if st.button("💾 Save"):
+        # 로컬 시스템 시간을 사용하여 데이터 저장
         entry = {
             "Time": datetime.now().strftime("%H:%M:%S"),
             "Std": standard, "Prc": process, "HI": round(hi_res, 3), "Res": res_status,
@@ -225,13 +226,12 @@ with btn_row1[1]:
         st.button("📤 Export", disabled=True)
 
 # ======================================================
-# 4. 히스토리 관리 (나란히 배치)
+# 4. 히스토리 관리 (Clear History 버튼만 유지)
 # ======================================================
 if st.session_state.history:
     st.write("---")
     btn_row2 = st.columns([1, 1])
-    with btn_row2[0]:
-        st.button("📋 Recent History", disabled=True)
+    # Recent History 버튼 박스 삭제 후 Clear History 버튼만 우측 배치 유지
     with btn_row2[1]:
         if st.button("🗑️ Clear History"):
             st.session_state.history = []

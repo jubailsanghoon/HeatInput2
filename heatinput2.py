@@ -157,8 +157,18 @@ st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True
 pass_type = st.radio("Pass", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed")
 
 # 6. Buttons
-# JS: Save 버튼 클릭 시 현재 로컬시간을 URL query param에 기록 후 Streamlit 버튼 클릭 트리거
-components.html("""
+# Streamlit 실제 버튼 (숨김 CSS 적용)
+st.markdown("""
+<style>
+div[data-testid="stButton"] button[kind="secondary"]#save_btn_hidden,
+div.hide-save-btn { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
+
+btn_cols = st.columns([1, 0.05, 1])
+with btn_cols[0]:
+    # JS Save 버튼
+    components.html("""
 <script>
 function injectTimeAndSave() {
     const now = new Date();
@@ -166,16 +176,12 @@ function injectTimeAndSave() {
     const mm = String(now.getMinutes()).padStart(2,'0');
     const ss = String(now.getSeconds()).padStart(2,'0');
     const timeStr = hh + ':' + mm + ':' + ss;
-
-    // URL query param 갱신
     const url = new URL(window.parent.location.href);
     url.searchParams.set('localtime', timeStr);
     window.parent.history.replaceState({}, '', url);
-
-    // Streamlit의 실제 Save Data 버튼 클릭
-    const buttons = window.parent.document.querySelectorAll('button[kind="secondary"], button');
+    const buttons = window.parent.document.querySelectorAll('button');
     for (let btn of buttons) {
-        if (btn.innerText.trim() === 'Save Data') {
+        if (btn.innerText.trim() === '_SAVE_HIDDEN_') {
             btn.click();
             break;
         }
@@ -185,19 +191,12 @@ function injectTimeAndSave() {
 <button onclick="injectTimeAndSave()" style="
     width:100%; height:56px; font-size:16px; font-weight:900;
     background:#f0f0f0; color:black; border:2px solid black;
-    border-radius:4px; cursor:pointer; margin-top:4px;">
+    border-radius:4px; cursor:pointer;">
     Save Data
 </button>
-""", height=70)
+""", height=65)
 
-# 실제 Streamlit Save 버튼 (숨김 처리 - JS 버튼이 대신 클릭)
-save_cols = st.columns([1, 0.05, 1])
-with save_cols[0]:
-    st.markdown('<div style="display:none">', unsafe_allow_html=True)
-    save_clicked = st.button("Save Data", key="save_btn_hidden")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with save_cols[2]:
+with btn_cols[2]:
     if st.session_state.history:
         csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode('utf-8-sig')
         st.download_button(
@@ -208,6 +207,11 @@ with save_cols[2]:
         )
     else:
         st.button("Export", disabled=True)
+
+# 숨겨진 실제 Streamlit 버튼 - JS가 트리거
+st.markdown('<div class="hide-save-btn">', unsafe_allow_html=True)
+save_clicked = st.button("_SAVE_HIDDEN_", key="save_btn_hidden")
+st.markdown('</div>', unsafe_allow_html=True)
 
 if save_clicked:
     new_entry = {

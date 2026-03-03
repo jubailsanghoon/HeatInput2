@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import streamlit.components.v1 as components
-import io
 
 st.set_page_config(
     layout="centered",
@@ -52,60 +51,52 @@ st.markdown("""
         align-items: center;
         gap: 0.5rem;
     }
-    /* 파일 업로더 흰색 고정 + 크기 축소 */
     [data-testid="stFileUploader"] {
         background-color: #ffffff !important;
         border: 1px solid #cccccc !important;
         border-radius: 6px !important;
-        padding: 6px !important;
+        padding: 4px !important;
     }
     [data-testid="stFileUploader"] section {
         background-color: #ffffff !important;
         border: 1px dashed #aaaaaa !important;
-        padding: 8px !important;
+        padding: 6px !important;
         min-height: unset !important;
     }
-    [data-testid="stFileUploader"] section > div {
-        padding: 4px !important;
-    }
-    [data-testid="stFileUploaderDropzoneInstructions"] {
-        display: none !important;
-    }
-    /* 아이콘 버튼 높이 맞춤 */
-    div[data-testid="stButton"] button, div[data-testid="stDownloadButton"] button {
-        min-width: unset !important;
-    }
-    /* 오버레이 */
-    .overlay-backdrop {
-        position: fixed; top:0; left:0; width:100%; height:100%;
-        background: rgba(0,0,0,0.45); z-index:9998;
-    }
-    .overlay-box {
-        position: fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-        background:#fff; border:2px solid black; border-radius:8px;
-        padding:20px; z-index:9999; width:90%; max-width:480px;
-        max-height:80vh; overflow-y:auto;
-    }
-    .overlay-title { font-size:16px; font-weight:900; margin-bottom:12px; border-bottom:2px solid black; padding-bottom:6px; }
-    .wps-row {
-        display:flex; justify-content:space-between; align-items:center;
-        padding:8px 4px; border-bottom:1px solid #eee; font-size:13px;
-    }
-    .wps-row:hover { background:#f5f5f5; }
-    .wps-select-btn {
-        background:#000; color:#fff; border:none; border-radius:4px;
-        padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer;
-    }
+    [data-testid="stFileUploaderDropzoneInstructions"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# ── 기본 Preset 데이터 ──
+DEFAULT_PRESETS = [
+    {"wps_no": "WPS-001", "pass": "Root", "hi_min": 0.80, "hi_max": 2.10},
+    {"wps_no": "WPS-001", "pass": "Fill", "hi_min": 0.90, "hi_max": 2.00},
+    {"wps_no": "WPS-001", "pass": "Cap",  "hi_min": 1.30, "hi_max": 3.10},
+    {"wps_no": "WPS-002", "pass": "Root", "hi_min": 0.80, "hi_max": 3.20},
+    {"wps_no": "WPS-002", "pass": "Fill", "hi_min": 0.90, "hi_max": 2.00},
+    {"wps_no": "WPS-002", "pass": "Cap",  "hi_min": 0.90, "hi_max": 2.00},
+    {"wps_no": "WPS-003", "pass": "Root", "hi_min": 0.90, "hi_max": 2.00},
+    {"wps_no": "WPS-003", "pass": "Fill", "hi_min": 0.92, "hi_max": 2.00},
+    {"wps_no": "WPS-003", "pass": "Cap",  "hi_min": 0.83, "hi_max": 2.00},
+    {"wps_no": "WPS-004", "pass": "Root", "hi_min": 0.82, "hi_max": 3.20},
+    {"wps_no": "WPS-004", "pass": "Fill", "hi_min": 0.78, "hi_max": 2.00},
+    {"wps_no": "WPS-004", "pass": "Cap",  "hi_min": 0.80, "hi_max": 3.20},
+    {"wps_no": "WPS-005", "pass": "Root", "hi_min": 0.67, "hi_max": 4.00},
+    {"wps_no": "WPS-005", "pass": "Fill", "hi_min": 0.80, "hi_max": 3.20},
+    {"wps_no": "WPS-005", "pass": "Cap",  "hi_min": 0.94, "hi_max": 3.00},
+]
+
 # ── 세션 상태 초기화 ──
-if 'history'      not in st.session_state: st.session_state.history      = []
-if 'wps_presets'  not in st.session_state: st.session_state.wps_presets  = []  # [{wps_no, pass, hi_min, hi_max}]
-if 'show_overlay' not in st.session_state: st.session_state.show_overlay = False
-if 'preset_min'   not in st.session_state: st.session_state.preset_min   = None
-if 'preset_max'   not in st.session_state: st.session_state.preset_max   = None
-if 'preset_label' not in st.session_state: st.session_state.preset_label = ""
+if 'history'        not in st.session_state: st.session_state.history        = []
+if 'wps_presets'    not in st.session_state: st.session_state.wps_presets    = None  # None = 기본값 사용
+if 'preset_min'     not in st.session_state: st.session_state.preset_min     = None
+if 'preset_max'     not in st.session_state: st.session_state.preset_max     = None
+if 'preset_label'   not in st.session_state: st.session_state.preset_label   = ""
+if 'show_import'    not in st.session_state: st.session_state.show_import    = False
+if 'expander_open'  not in st.session_state: st.session_state.expander_open  = False
+
+def get_presets():
+    return st.session_state.wps_presets if st.session_state.wps_presets is not None else DEFAULT_PRESETS
 
 # ── query_params 로컬 시간 ──
 params     = st.query_params
@@ -173,29 +164,33 @@ if wps_mode == "Manual":
     with w_cols[3]: max_range = st.number_input("max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
 
 elif wps_mode == "Preset":
-    presets = st.session_state.wps_presets
+    presets = get_presets()
+    is_default = st.session_state.wps_presets is None
 
-    # Import / Sample TXT 버튼
-    if 'show_import' not in st.session_state:
-        st.session_state.show_import = False
-
-    p_cols = st.columns([0.15, 0.15, 0.7])
-    with p_cols[0]:
+    # 📂 Import / 📄 Sample 아이콘 버튼
+    ic1, ic2, ic3 = st.columns([0.12, 0.12, 0.76])
+    with ic1:
         if st.button("📂", help="Import TXT"):
             st.session_state.show_import = not st.session_state.show_import
-    with p_cols[1]:
-        sample_lines = ["# WPS Preset - Heat Input Master"]
-        sample_lines.append("# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.")
-        sample_lines.append("# Pass: Root / Fill / Cap  |  최대 20행")
-        sample_lines.append("#")
-        for i in range(1, 6):
-            for p in ["Root", "Fill", "Cap"]:
-                sample_lines.append(f"WPS-{i:03d}\t{p}\t0.00\t0.00")
+            st.rerun()
+    with ic2:
+        sample_lines = [
+            "# WPS Preset - Heat Input Master",
+            "# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.",
+            "# Pass: Root / Fill / Cap  |  최대 20행",
+            "#",
+        ]
+        for item in DEFAULT_PRESETS:
+            sample_lines.append(f"{item['wps_no']}\t{item['pass']}\t{item['hi_min']}\t{item['hi_max']}")
         sample_txt = "\n".join(sample_lines).encode('utf-8')
         st.download_button("📄", data=sample_txt,
                            file_name="WPS_sample.txt", mime="text/plain",
                            help="Sample TXT 다운로드")
+    with ic3:
+        src_label = "기본 데이터 사용 중" if is_default else f"업로드 데이터 사용 중 ({len(presets)}건)"
+        st.caption(src_label)
 
+    # 파일 업로더 (토글)
     if st.session_state.show_import:
         uploaded = st.file_uploader("TXT", type="txt", label_visibility="collapsed")
         if uploaded:
@@ -210,17 +205,16 @@ elif wps_mode == "Preset":
                     if len(parts) != 4:
                         continue
                     wps_no, pass_, hi_min, hi_max = [p.strip() for p in parts]
-                    records.append({
-                        "wps_no": wps_no,
-                        "pass":   pass_,
-                        "hi_min": float(hi_min),
-                        "hi_max": float(hi_max),
-                    })
+                    records.append({"wps_no": wps_no, "pass": pass_,
+                                    "hi_min": float(hi_min), "hi_max": float(hi_max)})
                     if len(records) >= 20:
                         break
                 if records:
-                    st.session_state.wps_presets = records
-                    st.session_state.show_import = False
+                    st.session_state.wps_presets   = records
+                    st.session_state.show_import   = False
+                    st.session_state.preset_label  = ""
+                    st.session_state.preset_min    = None
+                    st.session_state.preset_max    = None
                     st.success(f"{len(records)}개 WPS 로드 완료")
                     st.rerun()
                 else:
@@ -228,40 +222,37 @@ elif wps_mode == "Preset":
             except Exception as e:
                 st.error(f"파일 오류: {e}")
 
-    if presets:
-        # 현재 선택된 Preset 표시
-        if st.session_state.preset_label:
-            st.info(f"선택됨: {st.session_state.preset_label}  |  Min: {st.session_state.preset_min}  Max: {st.session_state.preset_max}")
-        else:
-            st.info("아래 목록에서 WPS를 선택하세요")
-
-        if 'expander_open' not in st.session_state:
-            st.session_state.expander_open = False
-
-        with st.expander("📋 View WPS List", expanded=st.session_state.expander_open):
-            hdr = st.columns([3, 2, 1.2])
-            hdr[0].markdown("**WPS No.**")
-            hdr[1].markdown("**Pass**")
-            hdr[2].markdown("**Select**")
-            st.markdown('<hr style="margin:4px 0">', unsafe_allow_html=True)
-            for idx, item in enumerate(presets):
-                row = st.columns([3, 2, 1.2])
-                row[0].write(item["wps_no"])
-                row[1].write(item["pass"])
-                if row[2].button("✔", key=f"sel_{idx}"):
-                    st.session_state.preset_min    = item["hi_min"]
-                    st.session_state.preset_max    = item["hi_max"]
-                    st.session_state.preset_label  = f"{item['wps_no']} / {item['pass']}"
-                    st.session_state.expander_open = False
-                    st.rerun()
-
-        min_range = st.session_state.preset_min
-        max_range = st.session_state.preset_max
-
+    # 현재 선택된 Preset 표시
+    if st.session_state.preset_label:
+        st.info(f"✔ {st.session_state.preset_label}  |  Min: {st.session_state.preset_min}  Max: {st.session_state.preset_max}")
     else:
-        st.warning("등록된 WPS Preset이 없습니다. Import 또는 Sample CSV를 참고하세요.")
+        st.caption("아래 목록에서 WPS를 선택하세요")
 
-# Default: min_range = max_range = None → 판정 없음
+    # View WPS List expander
+    with st.expander("📋 View WPS List", expanded=st.session_state.expander_open):
+        # 헤더
+        h = st.columns([3, 2, 3, 1])
+        h[0].markdown("**WPS No.**")
+        h[1].markdown("**Pass**")
+        h[2].markdown("**Min / Max**")
+        h[3].markdown("**✔**")
+        st.divider()
+        for idx, item in enumerate(presets):
+            r = st.columns([3, 2, 3, 1])
+            r[0].write(item["wps_no"])
+            r[1].write(item["pass"])
+            r[2].write(f"{item['hi_min']} ~ {item['hi_max']}")
+            if r[3].button("✔", key=f"sel_{idx}"):
+                st.session_state.preset_min    = item["hi_min"]
+                st.session_state.preset_max    = item["hi_max"]
+                st.session_state.preset_label  = f"{item['wps_no']} / {item['pass']}"
+                st.session_state.expander_open = False
+                st.rerun()
+
+    min_range = st.session_state.preset_min
+    max_range = st.session_state.preset_max
+
+# Default: 판정 없음
 
 # 3. Input Parameters & Live Result
 st.write("")
@@ -275,10 +266,10 @@ with col_left:
         with r_cols[0]: st.markdown(f"**{label}**")
         with r_cols[1]: return st.number_input(label, value=value, step=0.1, format="%.1f", key=key, label_visibility="collapsed")
 
-    voltage = draw_input_row("Volt (V)",  30.0,  "v")
-    current = draw_input_row("Amp (A)",  300.0,  "c")
-    length  = draw_input_row("Len (mm)",   5.0,  "l")
-    time    = draw_input_row("Time (s)",   1.0,  "t")
+    voltage = draw_input_row("Volt (V)",  30.0, "v")
+    current = draw_input_row("Amp (A)", 300.0, "c")
+    length  = draw_input_row("Len (mm)",   5.0, "l")
+    time    = draw_input_row("Time (s)",   1.0, "t")
 
 k  = 1.0 if standard == "AWS" else {"SAW": 1.0, "GMAW": 0.8, "FCAW": 0.8, "SMAW": 0.8}.get(process, 0.8)
 HI = (k * voltage * current * time) / (length * 1000) if length > 0 else 0

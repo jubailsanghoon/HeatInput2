@@ -17,7 +17,7 @@ st.markdown("""
         max-width: 100% !important;
         margin: auto;
         font-family: 'Segoe UI', sans-serif;
-        padding: 2px 10px 10px 10px;
+        padding: 0 10px 10px 10px;
     }
     .header {
         display: flex;
@@ -27,7 +27,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
     .header img { height: 40px; margin-right: 10px; }
-    .title { font-size: 28px; font-weight: 900; }
+    .title { font-size: 32px; font-weight: 900; }
     .section-title { font-size: 16px; font-weight: 900; margin-top: 12px; margin-bottom: 8px; }
     .result-box {
         font-size: 24px;
@@ -86,6 +86,19 @@ st.markdown("""
     .result-status {
         width: 45%;
     }
+    .footer {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .footer-logo {
+        font-weight: 900;
+        font-size: 20px;
+        margin-right: 8px;
+    }
+    .footer-text {
+        font-size: 14px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -116,7 +129,7 @@ def validate_inputs(voltage, current, length, time_s):
     return errors
 
 def draw_input_row(label, value, key, step=0.1, fmt="%.1f"):
-    r_cols = st.columns([1, 1])
+    r_cols = st.columns([2, 1])
     with r_cols[0]:
         st.markdown("**" + label + "**")
     with r_cols[1]:
@@ -298,22 +311,17 @@ with row1[2]:
             disabled=True,
         )
 
-# 둘째 줄: Recent History / Clear History (여백 5%)
-row2 = st.columns([0.475, 0.05, 0.475])
+# 둘째 줄: Recent History / Clear History (여백 5%), 데이터 있을 때만 표시
+if st.session_state.history:
+    row2 = st.columns([0.475, 0.05, 0.475])
 
-with row2[0]:
-    if st.session_state.history:
+    with row2[0]:
         st.button("📋 Recent History")
-    else:
-        st.button("📋 Recent History", disabled=True)
 
-with row2[2]:
-    if st.session_state.history:
+    with row2[2]:
         if st.button("🗑️ Clear History"):
             st.session_state.history = []
             st.rerun()
-    else:
-        st.button("🗑️ Clear History", disabled=True)
 
 # ======================================================
 # 6. 히스토리 테이블
@@ -333,3 +341,13 @@ if st.session_state.history:
     styled_df = df.style.applymap(highlight_result, subset=["Result"])
     st.dataframe(styled_df, use_container_width=True)
 
+# ======================================================
+# 7. Footer
+# ======================================================
+st.markdown(
+    '<div class="footer">'
+    '<div class="footer-logo">V</div>'
+    '<div class="footer-text">Jubail.sanghoon@gmail.com</div>'
+    '</div>',
+    unsafe_allow_html=True,
+)

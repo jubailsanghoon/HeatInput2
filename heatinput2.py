@@ -215,8 +215,8 @@ elif wps_mode == "Preset":
         sl=["# WPS Preset","# No\tPass\tMin\tMax","#"]
         for item in DEFAULT_PRESETS:
             sl.append(f"{item['wps_no']}\t{item['pass']}\t{item['hi_min']}\t{item['hi_max']}")
-        st.download_button("📄",data="\n".join(sl).encode('utf-8'),
-                           file_name="WPS_sample.txt",mime="text/plain",help="Sample TXT")
+        st.download_button("⬇️",data="\n".join(sl).encode('utf-8'),
+                           file_name="WPS_sample.txt",mime="text/plain",help="WPS Sample TXT 다운로드")
     with ic3:
         st.caption("기본 데이터" if st.session_state.wps_presets is None else f"업로드 데이터 ({len(presets)}건)")
 
@@ -250,19 +250,20 @@ elif wps_mode == "Preset":
         st.caption("아래에서 WPS 선택")
 
     with st.expander("View WPS List", expanded=st.session_state.wps_expander):
-        wh = st.columns([3,2,2,1])
-        wh[0].markdown("**WPS No.**"); wh[1].markdown("**Pass**")
-        wh[2].markdown("**Min ~ Max**"); wh[3].markdown("**Select**")
-        st.divider()
-        for idx,item in enumerate(presets):
-            r = st.columns([3,2,2,1])
-            r[0].write(item["wps_no"]); r[1].write(item["pass"])
-            r[2].write(f"{item['hi_min']} ~ {item['hi_max']}")
-            if r[3].button("✔", key=f"ws_{idx}"):
-                st.session_state.preset_min=item["hi_min"]
-                st.session_state.preset_max=item["hi_max"]
-                st.session_state.preset_label=f"{item['wps_no']} / {item['pass']}"
-                st.session_state.preset_wps_no=item["wps_no"]
+        wps_opts = [f"{x['wps_no']} | {x['pass']} | {x['hi_min']}~{x['hi_max']}" for x in presets]
+        wps_sel = st.selectbox("WPS", wps_opts, label_visibility="collapsed", key="wps_sel_box")
+        bc1, bc2 = st.columns([1,1])
+        with bc1:
+            if st.button("✔ Apply", key="wps_apply"):
+                i = wps_opts.index(wps_sel)
+                st.session_state.preset_min=presets[i]["hi_min"]
+                st.session_state.preset_max=presets[i]["hi_max"]
+                st.session_state.preset_label=f"{presets[i]['wps_no']} / {presets[i]['pass']}"
+                st.session_state.preset_wps_no=presets[i]["wps_no"]
+                st.session_state.wps_expander=False
+                st.rerun()
+        with bc2:
+            if st.button("Close", key="wps_close"):
                 st.session_state.wps_expander=False
                 st.rerun()
 
@@ -309,9 +310,9 @@ with wi2:
     wl=["# Welder List","# No\tName","#"]
     for w in DEFAULT_WELDERS:
         wl.append(f"{w['welder_no']}\t{w['name']}")
-    st.download_button("📄",data="\n".join(wl).encode('utf-8'),
+    st.download_button("⬇️",data="\n".join(wl).encode('utf-8'),
                        file_name="Welder_sample.txt",mime="text/plain",
-                       help="Welder Sample TXT",key="wld_sample_btn")
+                       help="Welder Sample TXT 다운로드",key="wld_sample_btn")
 with wi3:
     st.caption("기본 Welder" if st.session_state.welder_presets is None else f"업로드 Welder ({len(welders)}명)")
 
@@ -343,14 +344,17 @@ else:
     st.caption("아래에서 Welder 선택")
 
 with st.expander("View Welder List", expanded=st.session_state.welder_expander):
-    wh = st.columns([3,3,1])
-    wh[0].markdown("**Welder No.**"); wh[1].markdown("**Name**"); wh[2].markdown("**Select**")
-    st.divider()
-    for idx,w in enumerate(welders):
-        wr = st.columns([3,3,1])
-        wr[0].write(w["welder_no"]); wr[1].write(w["name"])
-        if wr[2].button("✔", key=f"wsel_{idx}"):
-            st.session_state.preset_welder_no=w["welder_no"]
+    wld_opts = [f"{w['welder_no']} | {w['name']}" for w in welders]
+    wld_sel = st.selectbox("Welder", wld_opts, label_visibility="collapsed", key="wld_sel_box")
+    wc1, wc2 = st.columns([1,1])
+    with wc1:
+        if st.button("✔ Apply", key="wld_apply"):
+            i = wld_opts.index(wld_sel)
+            st.session_state.preset_welder_no=welders[i]["welder_no"]
+            st.session_state.welder_expander=False
+            st.rerun()
+    with wc2:
+        if st.button("Close", key="wld_close"):
             st.session_state.welder_expander=False
             st.rerun()
 

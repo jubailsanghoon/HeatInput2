@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(layout="centered", page_title="Heat Input Master")
 
 # ======================================================
-# CSS - 레이아웃 및 디자인 정밀 제어
+# CSS - 레이아웃 및 디자인 정밀 제어 (모바일 최적화 집중)
 # ======================================================
 st.markdown("""
 <style>
@@ -22,7 +22,7 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 헤더 - 폰트 사이즈 조정 및 여백 최적화 */
+    /* 헤더 - 여백 최적화 */
     .header {
         display: flex;
         align-items: center;
@@ -31,28 +31,28 @@ st.markdown("""
         margin-top: -20px; 
         margin-bottom: 25px;
     }
-    .header img { height: 50px; margin-right: 20px; }
+    .header img { height: 40px; margin-right: 15px; }
     .title { 
-        font-size: 24px; 
+        font-size: clamp(18px, 4vw, 24px); 
         font-weight: 900; 
         line-height: 1;
         color: black;
     }
 
     .section-title { 
-        font-size: 18px; 
+        font-size: 16px; 
         font-weight: 900; 
         margin-top: 15px; 
         margin-bottom: 10px;
         color: black;
     }
 
-    /* 결과 박스 스타일 */
+    /* 결과 박스 스타일 - 모바일 가변 폰트 적용 */
     .result-box-value {
         width: 100%;
-        font-size: 28px;
+        font-size: clamp(16px, 4.5vw, 26px);
         font-weight: 900;
-        padding: 15px 5px;
+        padding: 12px 2px;
         background: #ffe5cc;
         border: 2px solid black;
         border-radius: 8px;
@@ -62,9 +62,9 @@ st.markdown("""
 
     .status-box {
         width: 100%;
-        font-size: 28px;
+        font-size: clamp(16px, 4.5vw, 26px);
         font-weight: 900;
-        padding: 15px 5px;
+        padding: 12px 2px;
         border: 2px solid black;
         border-radius: 8px;
         text-align: center;
@@ -72,24 +72,39 @@ st.markdown("""
     .pass { background: #00cc44; color: white !important; }
     .fail { background: #ff7f00; color: white !important; }
 
-    /* 버튼 스타일 */
+    /* 버튼 스타일 - 모바일에서 텍스트가 넘치지 않도록 조절 */
     .stButton, .stDownloadButton {
         width: 100% !important;
     }
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
-        height: 65px !important;
-        font-size: 20px !important;
+        height: 60px !important;
+        font-size: clamp(13px, 3.5vw, 18px) !important;
         font-weight: 900 !important;
         background-color: #f0f0f0 !important;
         color: black !important;
         border: 2px solid black !important;
         border-radius: 8px !important;
-        padding: 0px !important;
+        padding: 0px 2px !important;
+        white-space: nowrap !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
         background-color: #e0e0e0 !important;
         border-color: #000000 !important;
+    }
+
+    /* ★★★ 모바일 강제 1열 방지 (가로 나란히 배치 유지) ★★★ */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 5px !important;
+    }
+    
+    div[data-testid="column"] {
+        min-width: 0 !important; /* 공간 부족 시 자동 축소 허용 */
+        flex: 1 1 auto !important;
     }
 
     /* 입력 필드 정렬 */
@@ -97,7 +112,7 @@ st.markdown("""
         align-items: center;
     }
     
-    /* 푸터 스타일 - 왼쪽 정렬(flex-start)로 변경 */
+    /* 푸터 스타일 - 왼쪽 정렬 */
     .footer {
         display: flex;
         justify-content: flex-start;
@@ -106,7 +121,7 @@ st.markdown("""
         padding-top: 20px;
     }
     .footer-text {
-        font-size: 14px;
+        font-size: 13px;
         color: #666;
     }
 </style>
@@ -171,11 +186,9 @@ with col_input:
 
 with col_result:
     st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-    # WPS Range 모드 선택 라디오 버튼
     wps_mode = st.radio("WPS Mode", ["Input", "No input"], horizontal=True, label_visibility="collapsed")
     
     if wps_mode == "Input":
-        # Min/Max를 한 줄에 나란히 배치 (입력창 폭 줄임)
         w_cols = st.columns([1, 1])
         with w_cols[0]:
             m_row = st.columns([0.8, 1.2])
@@ -189,25 +202,21 @@ with col_result:
         w_min, w_max = 0.0, 0.0
 
     st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)
-    
-    # 입열량 계산: HI = (k * V * A * t) / (L * 1000)
     hi_res = (k_val * volt * amp * time_s) / (len_mm * 1000) if len_mm > 0 else 0.0
     
     if wps_mode == "Input":
         res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
-        # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치 (나란히 배치)
         res_cols = st.columns([0.5, 0.05, 0.45])
         with res_cols[0]:
             st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
         with res_cols[2]:
             st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
     else:
-        # No input 선택 시 결과값만 표시 (가로 폭 유지를 위해 빈 공간과 나란히 배치 가능)
         res_status = "N/A"
         st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
 
 # ======================================================
-# 3. 버튼 레이아웃 - Save Data / Export CSV (나란히 배치)
+# 3. 버튼 레이아웃 - Save Data / Export CSV (나란히 배치 강제)
 # ======================================================
 st.write("")
 btn_row1 = st.columns([0.475, 0.05, 0.475])
@@ -231,7 +240,7 @@ with btn_row1[2]:
         st.button("📤 Export CSV", disabled=True)
 
 # ======================================================
-# 4. 히스토리 관리 (데이터 존재 시에만 표시, 나란히 배치)
+# 4. 히스토리 관리 (데이터 존재 시에만 표시, 나란히 배치 강제)
 # ======================================================
 if st.session_state.history:
     st.write("")
@@ -247,7 +256,7 @@ if st.session_state.history:
     st.table(pd.DataFrame(st.session_state.history))
 
 # ======================================================
-# 5. Footer - 이메일 주소 왼쪽 끝으로 이동
+# 5. Footer
 # ======================================================
 st.markdown(
     f'<div class="footer">'

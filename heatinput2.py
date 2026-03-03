@@ -12,7 +12,7 @@ st.markdown("""
 <style>
     /* 상단 여백 최소화 */
     .block-container {
-        padding-top: 0.5rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 2rem !important;
         max-width: 800px !important;
     }
@@ -22,18 +22,18 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 헤더 - 폰트 사이즈 대폭 확대 및 여백 최소화 */
+    /* 헤더 - 폰트 사이즈 조정 및 여백 최적화 */
     .header {
         display: flex;
         align-items: center;
-        border-bottom: 6px solid black;
-        padding-bottom: 5px;
-        margin-top: -45px; 
-        margin-bottom: 20px;
+        border-bottom: 4px solid black;
+        padding-bottom: 8px;
+        margin-top: -20px; 
+        margin-bottom: 25px;
     }
-    .header img { height: 70px; margin-right: 20px; }
+    .header img { height: 50px; margin-right: 20px; }
     .title { 
-        font-size: 64px; /* 폰트 사이즈 대폭 확대 */
+        font-size: 40px; /* 기존 64px에서 3단계 축소 */
         font-weight: 900; 
         line-height: 1;
         color: black;
@@ -47,14 +47,15 @@ st.markdown("""
         color: black;
     }
 
-    /* 결과 박스 스타일 */
+    /* 결과 박스 스타일 - 라운드 형태로 복구 */
     .result-box-value {
         width: 100%;
         font-size: 28px;
         font-weight: 900;
         padding: 15px 5px;
         background: #ffe5cc;
-        border: 3px solid black;
+        border: 2px solid black;
+        border-radius: 8px;
         text-align: center;
         color: black !important;
     }
@@ -64,25 +65,26 @@ st.markdown("""
         font-size: 28px;
         font-weight: 900;
         padding: 15px 5px;
-        border: 3px solid black;
+        border: 2px solid black;
+        border-radius: 8px;
         text-align: center;
     }
     .pass { background: #00cc44; color: white !important; }
     .fail { background: #ff7f00; color: white !important; }
 
-    /* 버튼 스타일 - 검정 테두리, 100% 폭 */
+    /* 버튼 스타일 - 라운드 형태로 복구 */
     .stButton, .stDownloadButton {
         width: 100% !important;
     }
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
-        height: 70px !important;
-        font-size: 22px !important;
+        height: 65px !important;
+        font-size: 20px !important;
         font-weight: 900 !important;
         background-color: #f0f0f0 !important;
         color: black !important;
-        border: 3px solid black !important;
-        border-radius: 0px !important;
+        border: 2px solid black !important;
+        border-radius: 8px !important;
         padding: 0px !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
@@ -95,17 +97,17 @@ st.markdown("""
         align-items: center;
     }
     
-    /* 푸터 스타일 */
+    /* 푸터 스타일 - 로고 삭제 대응 */
     .footer {
         display: flex;
-        align-items: center;
+        justify-content: center;
         margin-top: 50px;
-        border-top: 2px solid black;
+        border-top: 1px solid #ddd;
         padding-top: 20px;
     }
-    .footer-logo-img {
-        height: 50px;
-        margin-right: 20px;
+    .footer-text {
+        font-size: 14px;
+        color: #666;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -226,11 +228,10 @@ if st.session_state.history:
     st.table(pd.DataFrame(st.session_state.history))
 
 # ======================================================
-# 5. Footer - 로고 교체 및 이메일 표시
+# 5. Footer - 이메일만 표시 (로고 삭제)
 # ======================================================
 st.markdown(
     f'<div class="footer">'
-    f'<img class="footer-logo-img" src="https://raw.githubusercontent.com/jubailsanghoon/HeatInput2/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg" />'
     f'<div class="footer-text"><b>Jubail.sanghoon@gmail.com</b></div>'
     f'</div>',
     unsafe_allow_html=True

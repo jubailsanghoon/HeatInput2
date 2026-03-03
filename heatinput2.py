@@ -17,7 +17,7 @@ st.markdown("""
         max-width: 100% !important;
         margin: auto;
         font-family: 'Segoe UI', sans-serif;
-        padding: 10px;
+        padding: 2px 10px 10px 10px;
     }
     .header {
         display: flex;
@@ -27,7 +27,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
     .header img { height: 40px; margin-right: 10px; }
-    .title { font-size: 22px; font-weight: 900; }
+    .title { font-size: 28px; font-weight: 900; }
     .section-title { font-size: 16px; font-weight: 900; margin-top: 12px; margin-bottom: 8px; }
     .result-box {
         font-size: 24px;
@@ -76,15 +76,15 @@ st.markdown("""
     .k-info { font-size: 13px; color: #555 !important; margin-bottom: 4px; }
     .result-row {
         display: flex;
-        justify-content: space-between;
-        gap: 10px;
+        justify-content: flex-start;
         margin-bottom: 8px;
     }
-    .result-row .result-box,
-    .result-row .pass,
-    .result-row .fail {
-        flex: 0 0 45%;
-        margin-bottom: 0;
+    .result-value {
+        width: 55%;
+        margin-right: 5%;
+    }
+    .result-status {
+        width: 45%;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -116,7 +116,7 @@ def validate_inputs(voltage, current, length, time_s):
     return errors
 
 def draw_input_row(label, value, key, step=0.1, fmt="%.1f"):
-    r_cols = st.columns([1.5, 2])
+    r_cols = st.columns([1, 1])
     with r_cols[0]:
         st.markdown("**" + label + "**")
     with r_cols[1]:
@@ -183,23 +183,16 @@ range_col, live_col = st.columns([1.2, 1])
 
 with range_col:
     st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-    wr_cols = st.columns([0.5, 1.5, 0.5, 1.5])
-    with wr_cols[0]:
-        st.markdown("**Min**")
-    with wr_cols[1]:
-        min_range = st.number_input(
-            "min", value=0.96, step=0.01, format="%.2f",
-            label_visibility="collapsed", key="min_range"
-        )
-    with wr_cols[2]:
-        st.markdown("**Max**")
-    with wr_cols[3]:
-        max_range = st.number_input(
-            "max", value=2.50, step=0.01, format="%.2f",
-            label_visibility="collapsed", key="max_range"
-        )
+    wps_mode = st.radio("WPS Range Mode", ["Input", "No input"], horizontal=True, index=0)
 
-if min_range >= max_range:
+    if wps_mode == "Input":
+        min_range = draw_input_row("Min", st.session_state.get("min_range", 0.96), "min_range", step=0.01, fmt="%.2f")
+        max_range = draw_input_row("Max", st.session_state.get("max_range", 2.50), "max_range", step=0.01, fmt="%.2f")
+    else:
+        min_range = st.session_state.get("min_range", 0.96)
+        max_range = st.session_state.get("max_range", 2.50)
+
+if wps_mode == "Input" and min_range >= max_range:
     st.warning("WPS Min 값은 Max 값보다 작아야 합니다.")
 
 with live_col:
@@ -208,17 +201,26 @@ with live_col:
     errors = validate_inputs(voltage, current, length, time_s)
     if not errors:
         HI = (k * voltage * current * time_s) / (length * 1000)
-        status = "PASS" if min_range <= HI <= max_range else "FAIL"
+        if wps_mode == "Input":
+            status = "PASS" if min_range <= HI <= max_range else "FAIL"
+        else:
+            status = "NO WPS"
     else:
         HI = 0.0
         status = "FAIL"
 
     st.markdown('<div class="result-row">', unsafe_allow_html=True)
-    st.markdown('<div class="result-box">' + str(round(HI, 3)) + ' kJ/mm</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="result-box result-value">' + str(round(HI, 3)) + ' kJ/mm</div>',
+        unsafe_allow_html=True,
+    )
     if errors:
-        st.markdown('<div class="fail">INPUT ERR</div>', unsafe_allow_html=True)
+        st.markdown('<div class="fail result-status">INPUT ERR</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="' + status.lower() + '">' + status + '</div>', unsafe_allow_html=True)
+        if status in ["PASS", "FAIL"]:
+            st.markdown('<div class="' + status.lower() + ' result-status">' + status + '</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="result-status">' + status + '</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 for err in errors:
@@ -247,10 +249,12 @@ with opt_col4:
 # 5. 버튼 구역 (Save Data | Export CSV | Recent History | Clear History)  한 줄
 # ======================================================
 st.write("")
-btn_cols = st.columns(4)
 
-with btn_cols[0]:
-    save_disabled = bool(errors) or (min_range >= max_range)
+# 첫째 줄: Save Data / Export CSV (여백 5%)
+row1 = st.columns([0.475, 0.05, 0.475])
+
+with row1[0]:
+    save_disabled = bool(errors) or (wps_mode == "Input" and min_range >= max_range)
     if st.button("💾 Save Data", disabled=save_disabled):
         new_entry = {
             "Time":    datetime.now().strftime("%H:%M:%S"),
@@ -276,7 +280,7 @@ with btn_cols[0]:
         st.toast("저장되었습니다!", icon="✅")
         st.rerun()
 
-with btn_cols[1]:
+with row1[2]:
     if st.session_state.history:
         csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode("utf-8-sig")
         st.download_button(
@@ -286,15 +290,24 @@ with btn_cols[1]:
             mime="text/csv"
         )
     else:
-        st.button("📤 Export CSV", disabled=True)
+        st.download_button(
+            label="📤 Export CSV",
+            data="",
+            file_name="HI_empty.csv",
+            mime="text/csv",
+            disabled=True,
+        )
 
-with btn_cols[2]:
+# 둘째 줄: Recent History / Clear History (여백 5%)
+row2 = st.columns([0.475, 0.05, 0.475])
+
+with row2[0]:
     if st.session_state.history:
         st.button("📋 Recent History")
     else:
         st.button("📋 Recent History", disabled=True)
 
-with btn_cols[3]:
+with row2[2]:
     if st.session_state.history:
         if st.button("🗑️ Clear History"):
             st.session_state.history = []

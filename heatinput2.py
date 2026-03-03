@@ -6,14 +6,14 @@ from datetime import datetime
 st.set_page_config(layout="centered", page_title="Heat Input Master")
 
 # ======================================================
-# CSS - 레이아웃 및 디자인 정밀 제어 (모바일 최적화 집중)
+# CSS - 모바일 최적화 및 간격 극최소화 제어
 # ======================================================
 st.markdown("""
 <style>
-    /* 상단 여백 최소화 */
+    /* 전체 여백 조정 */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
+        padding-top: 1.5rem !important; 
+        padding-bottom: 1rem !important;
         max-width: 800px !important;
     }
     
@@ -22,106 +22,96 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 헤더 - 여백 최적화 */
+    /* 헤더 간격 최소화 */
     .header {
         display: flex;
         align-items: center;
-        border-bottom: 4px solid black;
-        padding-bottom: 8px;
-        margin-top: -20px; 
-        margin-bottom: 25px;
-    }
-    .header img { height: 40px; margin-right: 15px; }
-    .title { 
-        font-size: clamp(18px, 4vw, 24px); 
-        font-weight: 900; 
-        line-height: 1;
-        color: black;
-    }
-
-    .section-title { 
-        font-size: 16px; 
-        font-weight: 900; 
-        margin-top: 15px; 
+        border-bottom: 3px solid black;
+        padding-bottom: 5px;
         margin-bottom: 10px;
+    }
+    .header img { height: 35px; margin-right: 10px; }
+    .title { 
+        font-size: clamp(18px, 5vw, 22px); 
+        font-weight: 900; 
         color: black;
     }
 
-    /* 결과 박스 스타일 - 모바일 가변 폰트 적용 */
+    /* 섹션 제목 및 간격 최소화 */
+    .section-title { 
+        font-size: 14px; 
+        font-weight: 900; 
+        margin-top: 8px; 
+        margin-bottom: 4px;
+        color: black;
+    }
+
+    /* 결과 박스 스타일 */
     .result-box-value {
         width: 100%;
-        font-size: clamp(16px, 4.5vw, 26px);
+        font-size: clamp(14px, 4.2vw, 24px);
         font-weight: 900;
-        padding: 12px 2px;
+        padding: 10px 2px;
         background: #ffe5cc;
         border: 2px solid black;
-        border-radius: 8px;
+        border-radius: 6px;
         text-align: center;
         color: black !important;
     }
 
     .status-box {
         width: 100%;
-        font-size: clamp(16px, 4.5vw, 26px);
+        font-size: clamp(14px, 4.2vw, 24px);
         font-weight: 900;
-        padding: 12px 2px;
+        padding: 10px 2px;
         border: 2px solid black;
-        border-radius: 8px;
+        border-radius: 6px;
         text-align: center;
     }
     .pass { background: #00cc44; color: white !important; }
     .fail { background: #ff7f00; color: white !important; }
 
-    /* 버튼 스타일 - 모바일에서 텍스트가 넘치지 않도록 조절 */
-    .stButton, .stDownloadButton {
-        width: 100% !important;
-    }
+    /* 버튼 스타일 - 텍스트 최소화 및 크기 최적화 */
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
-        height: 60px !important;
-        font-size: clamp(13px, 3.5vw, 18px) !important;
+        height: 50px !important;
+        font-size: 16px !important;
         font-weight: 900 !important;
         background-color: #f0f0f0 !important;
         color: black !important;
         border: 2px solid black !important;
-        border-radius: 8px !important;
-        padding: 0px 2px !important;
-        white-space: nowrap !important;
-    }
-    .stButton > button:hover, .stDownloadButton > button:hover {
-        background-color: #e0e0e0 !important;
-        border-color: #000000 !important;
+        border-radius: 6px !important;
+        padding: 0px !important;
     }
 
-    /* ★★★ 모바일 강제 1열 방지 (가로 나란히 배치 유지) ★★★ */
+    /* ★★★ 모바일 수평 배치 강제 및 간격 극최소화 ★★★ */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 5px !important;
+        gap: 4px !important; /* 요소 간 간격 4px로 제한 */
     }
     
     div[data-testid="column"] {
-        min-width: 0 !important; /* 공간 부족 시 자동 축소 허용 */
+        min-width: 0 !important;
         flex: 1 1 auto !important;
     }
 
-    /* 입력 필드 정렬 */
-    div[data-testid="stHorizontalBlock"] {
-        align-items: center;
-    }
-    
-    /* 푸터 스타일 - 왼쪽 정렬 */
+    /* 라디오 버튼 간격 조절 */
+    div[data-testid="stWidgetLabel"] { display: none; }
+    div[data-testid="stRadio"] > div { gap: 10px !important; }
+
+    /* 푸터 스타일 */
     .footer {
         display: flex;
         justify-content: flex-start;
-        margin-top: 50px;
+        margin-top: 30px;
         border-top: 1px solid #ddd;
-        padding-top: 20px;
+        padding-top: 10px;
     }
     .footer-text {
-        font-size: 13px;
+        font-size: 12px;
         color: #666;
     }
 </style>
@@ -141,7 +131,7 @@ if "history" not in st.session_state:
     st.session_state.history = []
 
 def draw_input_row(label, value, key, step=0.1, fmt="%.1f"):
-    cols = st.columns([1.5, 1])
+    cols = st.columns([1, 1]) # 1:1 비율로 간격 최소화
     with cols[0]:
         st.markdown(f"**{label}**")
     with cols[1]:
@@ -159,108 +149,102 @@ st.markdown(
 )
 
 # ======================================================
-# 1. Standard / Process 선택
+# 1. Standard / Process (간격 최소화)
 # ======================================================
-c_std, c_prc = st.columns([1, 1])
+c_std, c_prc = st.columns([1, 1.3])
 with c_std:
-    st.markdown('<div class="section-title">Standard Selection</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Standard</div>', unsafe_allow_html=True)
     standard = st.radio("Std", ["AWS", "ISO"], horizontal=True, label_visibility="collapsed")
 with c_prc:
-    st.markdown('<div class="section-title">Select Process</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Process</div>', unsafe_allow_html=True)
     process = st.radio("Prc", ["SAW", "FCAW", "SMAW", "GMAW"], horizontal=True, label_visibility="collapsed")
 
 k_val = EFFICIENCY[process][standard]
 
 # ======================================================
-# 2. 메인 레이아웃 (Inputs & Result)
+# 2. 메인 레이아웃 (Input Parameters & WPS/Result)
 # ======================================================
 st.write("---")
-col_input, col_gap, col_result = st.columns([1.2, 0.1, 1.1])
+col_input, col_result = st.columns([1, 1]) # 모바일에서 반반 배치
 
 with col_input:
-    st.markdown('<div class="section-title">Input Parameters</div>', unsafe_allow_html=True)
-    volt = draw_input_row("Voltage (V)", 30.0, "v_val")
-    amp  = draw_input_row("Current (A)", 300.0, "a_val")
-    len_mm = draw_input_row("Length (mm)", 5.0, "l_val")
-    time_s = draw_input_row("Time (sec)", 1.0, "t_val")
+    st.markdown('<div class="section-title">Parameters</div>', unsafe_allow_html=True)
+    volt = draw_input_row("Volt(V)", 30.0, "v_val")
+    amp  = draw_input_row("Amp(A)", 300.0, "a_val")
+    len_mm = draw_input_row("Len(mm)", 5.0, "l_val")
+    time_s = draw_input_row("Time(s)", 1.0, "t_val")
 
 with col_result:
-    st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">WPS Range</div>', unsafe_allow_html=True)
     wps_mode = st.radio("WPS Mode", ["Input", "No input"], horizontal=True, label_visibility="collapsed")
     
     if wps_mode == "Input":
-        w_cols = st.columns([1, 1])
+        w_cols = st.columns([1, 1]) # Min/Max 간격 최소화
         with w_cols[0]:
-            m_row = st.columns([0.8, 1.2])
-            with m_row[0]: st.markdown("**Min.**")
-            with m_row[1]: w_min = st.number_input("Min", value=0.96, step=0.01, format="%.2f", key="min_input", label_visibility="collapsed")
+            w_min = st.number_input("Min", value=0.96, step=0.01, format="%.2f", key="min_input", label_visibility="collapsed")
         with w_cols[1]:
-            x_row = st.columns([0.8, 1.2])
-            with x_row[0]: st.markdown("**Max.**")
-            with x_row[1]: w_max = st.number_input("Max", value=2.50, step=0.01, format="%.2f", key="max_input", label_visibility="collapsed")
+            w_max = st.number_input("Max", value=2.50, step=0.01, format="%.2f", key="max_input", label_visibility="collapsed")
     else:
         w_min, w_max = 0.0, 0.0
+        st.write("Range Off")
 
-    st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Result</div>', unsafe_allow_html=True)
     hi_res = (k_val * volt * amp * time_s) / (len_mm * 1000) if len_mm > 0 else 0.0
     
     if wps_mode == "Input":
         res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
-        res_cols = st.columns([0.5, 0.05, 0.45])
+        res_cols = st.columns([1, 1])
         with res_cols[0]:
-            st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
-        with res_cols[2]:
+            st.markdown(f'<div class="result-box-value">{hi_res:.3f}</div>', unsafe_allow_html=True)
+        with res_cols[1]:
             st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
     else:
         res_status = "N/A"
         st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
 
 # ======================================================
-# 3. 버튼 레이아웃 - Save Data / Export CSV (나란히 배치 강제)
+# 3. 버튼 레이아웃 - Save / Export (나란히 배치)
 # ======================================================
 st.write("")
-btn_row1 = st.columns([0.475, 0.05, 0.475])
+btn_row1 = st.columns([1, 1])
 
 with btn_row1[0]:
-    if st.button("💾 Save Data"):
+    if st.button("💾 Save"):
         entry = {
             "Time": datetime.now().strftime("%H:%M:%S"),
-            "Std": standard, "Process": process, "HI": round(hi_res, 3), "Result": res_status,
+            "Std": standard, "Prc": process, "HI": round(hi_res, 3), "Res": res_status,
             "V": volt, "A": amp, "L": len_mm, "T": time_s
         }
         st.session_state.history.insert(0, entry)
         if len(st.session_state.history) > 50: st.session_state.history.pop()
         st.rerun()
 
-with btn_row1[2]:
+with btn_row1[1]:
     if st.session_state.history:
         csv_out = pd.DataFrame(st.session_state.history).to_csv(index=False).encode("utf-8-sig")
-        st.download_button(label="📤 Export CSV", data=csv_out, file_name=f"HeatInput_{datetime.now().strftime('%m%d_%H%M')}.csv", mime="text/csv")
+        st.download_button(label="📤 Export", data=csv_out, file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv", mime="text/csv")
     else:
-        st.button("📤 Export CSV", disabled=True)
+        st.button("📤 Export", disabled=True)
 
 # ======================================================
-# 4. 히스토리 관리 (데이터 존재 시에만 표시, 나란히 배치 강제)
+# 4. 히스토리 관리 (나란히 배치)
 # ======================================================
 if st.session_state.history:
-    st.write("")
-    btn_row2 = st.columns([0.475, 0.05, 0.475])
+    btn_row2 = st.columns([1.5, 1])
     with btn_row2[0]:
-        st.button("📋 Recent History", disabled=True)
-    with btn_row2[2]:
-        if st.button("🗑️ Clear History"):
+        st.markdown('<div class="section-title">Recent History</div>', unsafe_allow_html=True)
+    with btn_row2[1]:
+        if st.button("🗑️ Clear"):
             st.session_state.history = []
             st.rerun()
-
-    st.markdown('<div class="section-title">History Records (Max 50)</div>', unsafe_allow_html=True)
-    st.table(pd.DataFrame(st.session_state.history))
+    st.table(pd.DataFrame(st.session_state.history).head(10))
 
 # ======================================================
-# 5. Footer
+# 5. Footer (이메일 소문자 및 왼쪽 정렬)
 # ======================================================
 st.markdown(
     f'<div class="footer">'
-    f'<div class="footer-text"><b>Jubail.sanghoon@gmail.com</b></div>'
+    f'<div class="footer-text"><b>jubail.sanghoon@gmail.com</b></div>'
     f'</div>',
     unsafe_allow_html=True
 )

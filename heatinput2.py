@@ -155,40 +155,48 @@ elif wps_mode == "Preset":
     # Import / Sample CSV 버튼
     p_cols = st.columns([1, 1])
     with p_cols[0]:
-        uploaded = st.file_uploader("Import WPS CSV", type="csv", label_visibility="collapsed")
+        uploaded = st.file_uploader("Import WPS TXT", type="txt", label_visibility="collapsed")
         if uploaded:
             try:
-                df_up = pd.read_csv(uploaded)
-                df_up.columns = [c.strip() for c in df_up.columns]
-                required_cols = {"WPS No.", "Pass", "H/I Min.", "H/I Max."}
-                if required_cols.issubset(set(df_up.columns)):
-                    df_up = df_up.head(20)
-                    records = []
-                    for _, row in df_up.iterrows():
-                        records.append({
-                            "wps_no":  str(row["WPS No."]).strip(),
-                            "pass":    str(row["Pass"]).strip(),
-                            "hi_min":  float(row["H/I Min."]),
-                            "hi_max":  float(row["H/I Max."]),
-                        })
+                lines = uploaded.read().decode('utf-8').splitlines()
+                records = []
+                for line in lines:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    parts = line.split('\t')
+                    if len(parts) != 4:
+                        continue
+                    wps_no, pass_, hi_min, hi_max = [p.strip() for p in parts]
+                    records.append({
+                        "wps_no": wps_no,
+                        "pass":   pass_,
+                        "hi_min": float(hi_min),
+                        "hi_max": float(hi_max),
+                    })
+                    if len(records) >= 20:
+                        break
+                if records:
                     st.session_state.wps_presets = records
                     st.success(f"{len(records)}개 WPS 로드 완료")
                     st.rerun()
                 else:
-                    st.error("컬럼명 확인: WPS No. / Pass / H/I Min. / H/I Max.")
+                    st.error("데이터 없음. 형식: WPS번호[TAB]Pass[TAB]Min[TAB]Max")
             except Exception as e:
                 st.error(f"파일 오류: {e}")
 
     with p_cols[1]:
-        # Sample CSV 생성
-        sample_rows = []
+        # Sample TXT 생성
+        sample_lines = ["# WPS Preset - Heat Input Master"]
+        sample_lines.append("# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.")
+        sample_lines.append("# Pass: Root / Fill / Cap  |  최대 20행")
+        sample_lines.append("#")
         for i in range(1, 6):
             for p in ["Root", "Fill", "Cap"]:
-                sample_rows.append({"WPS No.": f"WPS-{i:03d}", "Pass": p, "H/I Min.": "", "H/I Max.": ""})
-        sample_df  = pd.DataFrame(sample_rows)
-        sample_csv = sample_df.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("Sample CSV", data=sample_csv,
-                           file_name="WPS_sample.csv", mime="text/csv")
+                sample_lines.append(f"WPS-{i:03d}\t{p}\t0.00\t0.00")
+        sample_txt = "\n".join(sample_lines).encode('utf-8')
+        st.download_button("Sample TXT", data=sample_txt,
+                           file_name="WPS_sample.txt", mime="text/plain")
 
     if presets:
         # 현재 선택된 Preset 표시

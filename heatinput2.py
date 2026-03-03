@@ -173,8 +173,66 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -- Manual (사용법) --
-with st.expander("User Manual", expanded=False):
-    st.markdown("""
+if 'manual_open' not in st.session_state:
+    st.session_state.manual_open = False
+if 'manual_lang' not in st.session_state:
+    st.session_state.manual_lang = "EN"
+
+with st.expander("User Manual", expanded=st.session_state.manual_open):
+    lang_col, _ = st.columns([1, 3])
+    with lang_col:
+        lang = st.radio("Language", ["EN", "KO"], horizontal=True,
+                        index=0 if st.session_state.manual_lang == "EN" else 1,
+                        label_visibility="collapsed")
+        st.session_state.manual_lang = lang
+
+    if lang == "EN":
+        st.markdown("""
+<div style="font-size:13px; line-height:1.9; color:#000; padding:4px;">
+<b style="font-size:14px;">Heat Input Master(v.0.5) - User Manual</b><br><br>
+
+<b>1. Standard / Process</b><br>
+&nbsp;&nbsp;- Standard: AWS (k=1.0 fixed) / ISO (SAW=1.0, GMAW/FCAW/SMAW=0.8)<br>
+&nbsp;&nbsp;- Process: Select welding process (SAW / FCAW / SMAW / GMAW)<br><br>
+
+<b>2. WPS Range (kJ/mm)</b><br>
+&nbsp;&nbsp;- <b>Manual</b>: Enter Min / Max directly for judgment<br>
+&nbsp;&nbsp;- <b>Preset</b>: Select from pre-registered WPS list for judgment<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#128194; (Import): Upload TXT file (tab-delimited format)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#128196; (Sample): Download sample TXT, fill values, then Import<br>
+&nbsp;&nbsp;&nbsp;&nbsp;View WPS List: Select WPS from list, click [Apply Selection]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Before import, default data (WPS-001~005) is used<br>
+&nbsp;&nbsp;- <b>Default</b>: Display heat input value only, no judgment<br><br>
+
+<b>3. Input Parameters</b><br>
+&nbsp;&nbsp;- Enter Volt(V) / Amp(A) / Len(mm) / Time(s)<br>
+&nbsp;&nbsp;- Formula: HI = k x V x A x T / (L x 1000) [kJ/mm]<br><br>
+
+<b>4. Live Result</b><br>
+&nbsp;&nbsp;- Green PASS: Heat input is within WPS range<br>
+&nbsp;&nbsp;- Orange FAIL: Heat input is out of WPS range<br>
+&nbsp;&nbsp;- White (-): Default mode, no judgment<br><br>
+
+<b>5. Optional Info</b><br>
+&nbsp;&nbsp;- Enter WPS No. / Welder No. / Joint No. (included in saved data)<br>
+&nbsp;&nbsp;- WPS No. is auto-filled when a Preset WPS is selected<br><br>
+
+<b>6. Weld Pass</b><br>
+&nbsp;&nbsp;- Select applicable pass: Root / Fill / Cap<br><br>
+
+<b>7. Save Data / Export</b><br>
+&nbsp;&nbsp;- Save Data: Save current result to history (max 50 records)<br>
+&nbsp;&nbsp;- Export: Download saved data as CSV file<br>
+&nbsp;&nbsp;- Save time is based on the local time of the accessing device<br><br>
+
+<b>8. TXT Import File Format</b><br>
+&nbsp;&nbsp;- Delimiter: Tab<br>
+&nbsp;&nbsp;- Format: WPS_No [TAB] Pass [TAB] H/I Min. [TAB] H/I Max.<br>
+&nbsp;&nbsp;- Lines starting with # are treated as comments / Max 20 rows
+</div>
+""", unsafe_allow_html=True)
+    else:
+        st.markdown("""
 <div style="font-size:13px; line-height:1.9; color:#000; padding:4px;">
 <b style="font-size:14px;">Heat Input Master(v.0.5) 사용법</b><br><br>
 
@@ -218,6 +276,11 @@ with st.expander("User Manual", expanded=False):
 &nbsp;&nbsp;- # 으로 시작하는 줄은 주석 처리 / 최대 20행
 </div>
 """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    if st.button("Close", key="manual_close"):
+        st.session_state.manual_open = False
+        st.rerun()
 
 # 1. Standard & Process
 c_std, c_prc = st.columns([1, 1])

@@ -172,6 +172,53 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# -- Manual (사용법) --
+with st.expander("User Manual", expanded=False):
+    st.markdown("""
+<div style="font-size:13px; line-height:1.9; color:#000; padding:4px;">
+<b style="font-size:14px;">Heat Input Master(v.0.5) 사용법</b><br><br>
+
+<b>1. Standard / Process</b><br>
+&nbsp;&nbsp;- Standard: AWS(k=1.0 고정) / ISO(SAW=1.0, GMAW/FCAW/SMAW=0.8)<br>
+&nbsp;&nbsp;- Process: 용접 공법 선택 (SAW / FCAW / SMAW / GMAW)<br><br>
+
+<b>2. WPS Range (kJ/mm)</b><br>
+&nbsp;&nbsp;- <b>Manual</b>: Min / Max 직접 입력하여 판정<br>
+&nbsp;&nbsp;- <b>Preset</b>: 사전 등록된 WPS 목록에서 선택하여 판정<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#128194; (Import): TXT 파일 업로드 (탭 구분자 형식)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#128196; (Sample): Sample TXT 다운로드 &gt; 값 입력 후 Import<br>
+&nbsp;&nbsp;&nbsp;&nbsp;View WPS List: 목록 선택 후 [선택 적용] 클릭<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Import 전에는 기본 데이터(WPS-001~005) 사용<br>
+&nbsp;&nbsp;- <b>Default</b>: 판정 없이 열입력 값만 표시<br><br>
+
+<b>3. Input Parameters</b><br>
+&nbsp;&nbsp;- Volt(V) / Amp(A) / Len(mm) / Time(s) 입력<br>
+&nbsp;&nbsp;- 계산식: HI = k x V x A x T / (L x 1000) [kJ/mm]<br><br>
+
+<b>4. Live Result</b><br>
+&nbsp;&nbsp;- 녹색 PASS: 열입력이 WPS 범위 내<br>
+&nbsp;&nbsp;- 주황 FAIL: 열입력이 WPS 범위 초과 또는 미달<br>
+&nbsp;&nbsp;- 흰색 (-): Default 모드 (판정 없음)<br><br>
+
+<b>5. Optional Info</b><br>
+&nbsp;&nbsp;- WPS No. / Welder No. / Joint No. 입력 (저장 데이터에 포함)<br>
+&nbsp;&nbsp;- Preset 모드에서 WPS 선택시 WPS No. 자동 입력<br><br>
+
+<b>6. Weld Pass</b><br>
+&nbsp;&nbsp;- Root / Fill / Cap 중 해당 패스 선택<br><br>
+
+<b>7. Save Data / Export</b><br>
+&nbsp;&nbsp;- Save Data: 현재 결과를 히스토리에 저장 (최대 50건)<br>
+&nbsp;&nbsp;- Export: 저장된 데이터를 CSV 파일로 다운로드<br>
+&nbsp;&nbsp;- 저장 시간은 접속 기기의 로컬 시간 기준<br><br>
+
+<b>8. TXT Import 파일 형식</b><br>
+&nbsp;&nbsp;- 구분자: 탭(Tab)<br>
+&nbsp;&nbsp;- 형식: WPS번호 [TAB] Pass [TAB] H/I Min. [TAB] H/I Max.<br>
+&nbsp;&nbsp;- # 으로 시작하는 줄은 주석 처리 / 최대 20행
+</div>
+""", unsafe_allow_html=True)
+
 # 1. Standard & Process
 c_std, c_prc = st.columns([1, 1])
 with c_std:

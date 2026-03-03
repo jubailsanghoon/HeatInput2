@@ -32,6 +32,8 @@ st.markdown("""
     [data-testid="stFileUploader"] section { background-color:#ffffff !important; border:1px dashed #aaaaaa !important; padding:6px !important; min-height:unset !important; }
     [data-testid="stFileUploaderDropzoneInstructions"] { display:none !important; }
     [data-testid="stFileUploader"] button { background-color:#f0f0f0 !important; color:#000000 !important; border:1px solid #cccccc !important; height:auto !important; font-size:13px !important; padding:4px 10px !important; }
+    .icon-btn-row { display:flex; flex-direction:row; gap:8px; align-items:center; margin-bottom:6px; }
+    .icon-btn-row button { width:auto !important; height:36px !important; font-size:14px !important; padding:0 12px !important; margin-top:0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -54,16 +56,16 @@ DEFAULT_PRESETS = [
 ]
 
 DEFAULT_WELDERS = [
-    {"welder_no":"Welder001","name":"Hong Gil-dong"},
-    {"welder_no":"Welder002","name":"Park Moon-su"},
-    {"welder_no":"Welder003","name":"Im Kkeok-jeong"},
+    {"welder_no":"Welder001","name":"Hong Gil-dong","dept":""},
+    {"welder_no":"Welder002","name":"Park Moon-su","dept":""},
+    {"welder_no":"Welder003","name":"Im Kkeok-jeong","dept":""},
 ]
 
 for key, val in [
     ('history',[]),('wps_presets',None),('preset_min',None),('preset_max',None),
     ('preset_label',""),('show_import',False),('wps_expander',False),('preset_wps_no',""),
     ('welder_presets',None),('show_welder_import',False),('welder_expander',False),
-    ('preset_welder_no',""),('manual_open',False),('manual_lang',"EN"),
+    ('preset_welder_no',""),('preset_welder_name',""),('manual_open',False),('manual_lang',"EN"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = val
@@ -109,14 +111,21 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# User Manual
-with st.expander("User Manual", expanded=st.session_state.manual_open):
+# ── User Manual ──────────────────────────────────────────────────────────────
+manual_expander = st.expander("User Manual", expanded=st.session_state.manual_open)
+with manual_expander:
     lc, _ = st.columns([1,3])
     with lc:
         lang = st.radio("lang",["EN","KO"],horizontal=True,
                         index=0 if st.session_state.manual_lang=="EN" else 1,
                         label_visibility="collapsed")
         st.session_state.manual_lang = lang
+
+    # ── Disclaimer always shown at top ──
+    st.markdown("""<div style="font-size:13px;background:#fff8e1;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;margin-bottom:10px;color:#000;">
+⚠️ 이 앱은 개인의 필요에 따라 작성되었으며 예고없이 수정, 변경, 삭제될 수 있습니다.
+</div>""", unsafe_allow_html=True)
+
     if lang=="EN":
         st.markdown("""<div style="font-size:13px;line-height:1.9;color:#000;">
 <b style="font-size:14px;">Heat Input Master(v.0.5) - User Manual</b><br><br>
@@ -125,8 +134,9 @@ with st.expander("User Manual", expanded=st.session_state.manual_open):
 &nbsp;&nbsp;- Process: SAW / FCAW / SMAW / GMAW<br><br>
 <b>2. WPS Range (kJ/mm)</b><br>
 &nbsp;&nbsp;- Manual: enter Min/Max directly<br>
-&nbsp;&nbsp;- Preset: select from WPS list (&#128194; Import / &#128196; Sample / View WPS List)<br>
+&nbsp;&nbsp;- Preset: select from WPS list (📂 Import / ⬇️ Sample / View WPS List)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Default data WPS-001~005 used before import<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Default selection is 'Manual' — enter Min/Max manually when selected<br>
 &nbsp;&nbsp;- Default: no judgment, value only<br><br>
 <b>3. Input Parameters</b><br>
 &nbsp;&nbsp;- Volt(V) / Amp(A) / Len(mm) / Time(s)<br>
@@ -134,17 +144,20 @@ with st.expander("User Manual", expanded=st.session_state.manual_open):
 <b>4. Live Result</b>: Green=PASS / Orange=FAIL / White=No judgment<br><br>
 <b>5. Optional Info</b><br>
 &nbsp;&nbsp;- <b>Welder No.</b>: auto-filled when selected from Welder List<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&#128194; Import TXT: upload tab-delimited Welder TXT (max 10 rows)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&#128196; Sample TXT: download template, fill in, then import<br>
-&nbsp;&nbsp;&nbsp;&nbsp;View Welder List: shows Welder No. / Name / Select button<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Default selection is 'Manual' — enter Welder No. manually when selected<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📂 Import TXT: upload tab-delimited Welder TXT (max 10 rows)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;⬇️ Sample TXT: download template, fill in, then import<br>
+&nbsp;&nbsp;&nbsp;&nbsp;View Welder List: shows Welder No. / Name / Dept / Select button<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Default data (Welder001~003) used before import<br>
 &nbsp;&nbsp;- <b>WPS No.</b>: auto-filled from Preset WPS selection<br>
-&nbsp;&nbsp;- <b>Joint No.</b>: manual entry<br><br>
+&nbsp;&nbsp;- <b>Joint No.</b>: manual entry<br>
+&nbsp;&nbsp;- <b>Dep't</b>: manual entry<br><br>
 <b>6. Weld Pass</b>: Root / Fill / Cap<br><br>
-<b>7. Save Data / Export</b>: max 50 records, CSV download, local device time<br><br>
+<b>7. Save Data / Export</b>: max 10 records, CSV download, local device time<br>
+&nbsp;&nbsp;- Export filename format: HeatInput Record - DDDD-TTTT<br><br>
 <b>8. TXT Format</b><br>
 &nbsp;&nbsp;- WPS TXT: WPS_No [TAB] Pass [TAB] H/I Min. [TAB] H/I Max. (max 20 rows)<br>
-&nbsp;&nbsp;- Welder TXT: Welder_No [TAB] Name (max 10 rows)<br>
+&nbsp;&nbsp;- Welder TXT: Welder_No [TAB] Name [TAB] Dept (max 10 rows)<br>
 &nbsp;&nbsp;- Lines starting with # are treated as comments
 </div>""", unsafe_allow_html=True)
     else:
@@ -155,8 +168,9 @@ with st.expander("User Manual", expanded=st.session_state.manual_open):
 &nbsp;&nbsp;- Process: SAW / FCAW / SMAW / GMAW<br><br>
 <b>2. WPS Range (kJ/mm)</b><br>
 &nbsp;&nbsp;- Manual: Min/Max 직접 입력<br>
-&nbsp;&nbsp;- Preset: WPS 목록에서 선택 (&#128194; Import / &#128196; Sample / View WPS List)<br>
+&nbsp;&nbsp;- Preset: WPS 목록에서 선택 (📂 Import / ⬇️ Sample / View WPS List)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Import 전 기본 데이터 WPS-001~005 사용<br>
+&nbsp;&nbsp;&nbsp;&nbsp;기본 선택값은 'Manual' — 선택 시 Min/Max 수동 입력<br>
 &nbsp;&nbsp;- Default: 판정 없이 값만 표시<br><br>
 <b>3. Input Parameters</b><br>
 &nbsp;&nbsp;- Volt(V) / Amp(A) / Len(mm) / Time(s)<br>
@@ -164,25 +178,29 @@ with st.expander("User Manual", expanded=st.session_state.manual_open):
 <b>4. Live Result</b>: 녹색=PASS / 주황=FAIL / 흰색=판정없음<br><br>
 <b>5. Optional Info</b><br>
 &nbsp;&nbsp;- <b>Welder No.</b>: Welder 목록 선택시 자동 입력<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&#128194; Import TXT: 탭 구분자 Welder TXT 업로드 (최대 10행)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&#128196; Sample TXT: 양식 다운로드 후 작성하여 Import<br>
-&nbsp;&nbsp;&nbsp;&nbsp;View Welder List: Welder No. / 이름 / 선택 버튼 표시<br>
+&nbsp;&nbsp;&nbsp;&nbsp;기본 선택값은 'Manual' — 선택 시 Welder No. 수동 입력<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📂 Import TXT: 탭 구분자 Welder TXT 업로드 (최대 10행)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;⬇️ Sample TXT: 양식 다운로드 후 작성하여 Import<br>
+&nbsp;&nbsp;&nbsp;&nbsp;View Welder List: Welder No. / 이름 / 부서 / 선택 버튼 표시<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Import 전에는 기본 데이터(Welder001~003) 사용<br>
 &nbsp;&nbsp;- <b>WPS No.</b>: Preset WPS 선택시 자동 입력<br>
-&nbsp;&nbsp;- <b>Joint No.</b>: 직접 입력<br><br>
+&nbsp;&nbsp;- <b>Joint No.</b>: 직접 입력<br>
+&nbsp;&nbsp;- <b>Dep't</b>: 직접 입력<br><br>
 <b>6. Weld Pass</b>: Root / Fill / Cap<br><br>
-<b>7. Save Data / Export</b>: 최대 50건, CSV 다운로드, 기기 로컬 시간 기준<br><br>
+<b>7. Save Data / Export</b>: 최대 10건, CSV 다운로드, 기기 로컬 시간 기준<br>
+&nbsp;&nbsp;- Export 파일명 형식: HeatInput Record - DDDD-TTTT<br><br>
 <b>8. TXT 파일 형식</b><br>
 &nbsp;&nbsp;- WPS TXT: WPS번호 [TAB] Pass [TAB] H/I Min. [TAB] H/I Max. (최대 20행)<br>
-&nbsp;&nbsp;- Welder TXT: Welder번호 [TAB] 이름 (최대 10행)<br>
+&nbsp;&nbsp;- Welder TXT: Welder번호 [TAB] 이름 [TAB] 부서 (최대 10행)<br>
 &nbsp;&nbsp;- # 으로 시작하는 줄은 주석 처리
 </div>""", unsafe_allow_html=True)
+
     st.markdown("---")
-    if st.button("Close", key="manual_close"):
+    if st.button("Close Manual", key="manual_close"):
         st.session_state.manual_open = False
         st.rerun()
 
-# 1. Standard & Process
+# ── 1. Standard & Process ────────────────────────────────────────────────────
 c_std, c_prc = st.columns([1,1])
 with c_std:
     st.markdown('<div class="section-title">Standard</div>', unsafe_allow_html=True)
@@ -191,9 +209,10 @@ with c_prc:
     st.markdown('<div class="section-title">Process</div>', unsafe_allow_html=True)
     process = st.radio("Prc",["SAW","FCAW","SMAW","GMAW"],horizontal=True,label_visibility="collapsed")
 
-# 2. WPS Range
+# ── 2. WPS Range ─────────────────────────────────────────────────────────────
 st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-wps_mode = st.radio("WPS Mode",["Manual","Preset","Default"],horizontal=True,label_visibility="collapsed")
+wps_mode = st.radio("WPS Mode",["Manual","Preset","Default"],horizontal=True,label_visibility="collapsed",
+                    index=0)  # default = Manual
 min_range = None
 max_range = None
 
@@ -206,19 +225,22 @@ if wps_mode == "Manual":
 
 elif wps_mode == "Preset":
     presets = get_presets()
-    ic1,ic2,ic3 = st.columns([0.12,0.12,0.76])
-    with ic1:
-        if st.button("📂", help="Import WPS TXT"):
+
+    # ── Icons in a single horizontal row ──
+    icon_c1, icon_c2, icon_c3 = st.columns([0.08, 0.08, 0.84])
+    with icon_c1:
+        if st.button("📂", key="wps_imp_icon", help="Import WPS TXT"):
             st.session_state.show_import = not st.session_state.show_import
             st.rerun()
-    with ic2:
+    with icon_c2:
         sl=["# WPS Preset","# No\tPass\tMin\tMax","#"]
         for item in DEFAULT_PRESETS:
             sl.append(f"{item['wps_no']}\t{item['pass']}\t{item['hi_min']}\t{item['hi_max']}")
-        st.download_button("⬇️",data="\n".join(sl).encode('utf-8'),
-                           file_name="WPS_sample.txt",mime="text/plain",help="WPS Sample TXT 다운로드")
-    with ic3:
-        st.caption("기본 데이터" if st.session_state.wps_presets is None else f"업로드 데이터 ({len(presets)}건)")
+        st.download_button("⬇️", data="\n".join(sl).encode('utf-8'),
+                           file_name="WPS_sample.txt", mime="text/plain",
+                           help="Download WPS Sample TXT", key="wps_dl_icon")
+    with icon_c3:
+        st.caption("Default Data" if st.session_state.wps_presets is None else f"Uploaded Data ({len(presets)} records)")
 
     if st.session_state.show_import:
         up = st.file_uploader("WPS TXT",type="txt",label_visibility="collapsed",key="wps_up")
@@ -238,18 +260,20 @@ elif wps_mode == "Preset":
                     st.session_state.preset_label=""
                     st.session_state.preset_min=None
                     st.session_state.preset_max=None
-                    st.success(f"{len(recs)}개 WPS 로드 완료"); st.rerun()
+                    st.success(f"{len(recs)} WPS records loaded."); st.rerun()
                 else:
-                    st.error("데이터 없음")
+                    st.error("No data found.")
             except Exception as e:
-                st.error(f"오류: {e}")
+                st.error(f"Error: {e}")
 
     if st.session_state.preset_label:
-        st.info(f"선택: {st.session_state.preset_label}  |  {st.session_state.preset_min} ~ {st.session_state.preset_max}")
+        st.info(f"Selected: {st.session_state.preset_label}  |  {st.session_state.preset_min} ~ {st.session_state.preset_max}")
     else:
-        st.caption("아래에서 WPS 선택")
+        st.caption("Select WPS from list below")
 
-    with st.expander("View WPS List", expanded=st.session_state.wps_expander):
+    # ── Expander shows 4 rows by default via listbox height ──
+    wps_expander_state = st.expander("View WPS List", expanded=st.session_state.wps_expander)
+    with wps_expander_state:
         wps_opts = [f"{x['wps_no']} | {x['pass']} | {x['hi_min']}~{x['hi_max']}" for x in presets]
         wps_sel = st.selectbox("WPS", wps_opts, label_visibility="collapsed", key="wps_sel_box")
         bc1, bc2 = st.columns([1,1])
@@ -263,7 +287,7 @@ elif wps_mode == "Preset":
                 st.session_state.wps_expander=False
                 st.rerun()
         with bc2:
-            if st.button("Close", key="wps_close"):
+            if st.button("Close WPS List", key="wps_close"):
                 st.session_state.wps_expander=False
                 st.rerun()
 
@@ -273,7 +297,7 @@ elif wps_mode == "Preset":
 if wps_mode != "Preset":
     st.session_state.preset_wps_no = ""
 
-# 3. Input Parameters & Live Result
+# ── 3. Input Parameters & Live Result ────────────────────────────────────────
 st.write("")
 col_left, col_right = st.columns([1.2,1])
 with col_left:
@@ -297,24 +321,26 @@ with col_right:
     bc = "result-box-pass" if status=="PASS" else ("result-box-fail" if status=="FAIL" else "result-box-none")
     st.markdown(f'<div class="{bc}">{HI:.3f} kJ/mm<br><span style="font-size:14px;">{status}</span></div>', unsafe_allow_html=True)
 
-# 4. Optional Info + Welder List
+# ── 4. Optional Info + Welder List ───────────────────────────────────────────
 st.markdown('<div class="section-title">Optional Info</div>', unsafe_allow_html=True)
 
 welders = get_welders()
-wi1,wi2,wi3 = st.columns([0.12,0.12,0.76])
+
+# ── Icons in a single horizontal row ──
+wi1, wi2, wi3 = st.columns([0.08, 0.08, 0.84])
 with wi1:
     if st.button("📂", help="Import Welder TXT", key="wld_imp_btn"):
         st.session_state.show_welder_import = not st.session_state.show_welder_import
         st.rerun()
 with wi2:
-    wl=["# Welder List","# No\tName","#"]
+    wl=["# Welder List","# No\tName\tDept","#"]
     for w in DEFAULT_WELDERS:
-        wl.append(f"{w['welder_no']}\t{w['name']}")
-    st.download_button("⬇️",data="\n".join(wl).encode('utf-8'),
-                       file_name="Welder_sample.txt",mime="text/plain",
-                       help="Welder Sample TXT 다운로드",key="wld_sample_btn")
+        wl.append(f"{w['welder_no']}\t{w['name']}\t{w.get('dept','')}")
+    st.download_button("⬇️", data="\n".join(wl).encode('utf-8'),
+                       file_name="Welder_sample.txt", mime="text/plain",
+                       help="Download Welder Sample TXT", key="wld_sample_btn")
 with wi3:
-    st.caption("기본 Welder" if st.session_state.welder_presets is None else f"업로드 Welder ({len(welders)}명)")
+    st.caption("Default Welder Data" if st.session_state.welder_presets is None else f"Uploaded Welder Data ({len(welders)} records)")
 
 if st.session_state.show_welder_import:
     wup = st.file_uploader("Welder TXT",type="txt",label_visibility="collapsed",key="wld_up")
@@ -325,71 +351,85 @@ if st.session_state.show_welder_import:
                 line=line.strip()
                 if not line or line.startswith('#'): continue
                 p=line.split('\t')
-                if len(p)!=2: continue
-                wrecs.append({"welder_no":p[0].strip(),"name":p[1].strip()})
+                if len(p)<2: continue
+                dept = p[2].strip() if len(p)>=3 else ""
+                wrecs.append({"welder_no":p[0].strip(),"name":p[1].strip(),"dept":dept})
                 if len(wrecs)>=10: break
             if wrecs:
                 st.session_state.welder_presets=wrecs
                 st.session_state.show_welder_import=False
                 st.session_state.preset_welder_no=""
-                st.success(f"{len(wrecs)}명 로드 완료"); st.rerun()
+                st.session_state.preset_welder_name=""
+                st.success(f"{len(wrecs)} welders loaded."); st.rerun()
             else:
-                st.error("데이터 없음")
+                st.error("No data found.")
         except Exception as e:
-            st.error(f"오류: {e}")
+            st.error(f"Error: {e}")
 
 if st.session_state.preset_welder_no:
-    st.info(f"선택 Welder: {st.session_state.preset_welder_no}")
+    display_name = st.session_state.preset_welder_name
+    st.info(f"Selected Welder: {st.session_state.preset_welder_no}-{display_name}" if display_name else f"Selected Welder: {st.session_state.preset_welder_no}")
 else:
-    st.caption("아래에서 Welder 선택")
+    st.caption("Select Welder from list below (or enter manually)")
 
-with st.expander("View Welder List", expanded=st.session_state.welder_expander):
-    wld_opts = [f"{w['welder_no']} | {w['name']}" for w in welders]
+welder_expander_state = st.expander("View Welder List", expanded=st.session_state.welder_expander)
+with welder_expander_state:
+    wld_opts = [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
     wld_sel = st.selectbox("Welder", wld_opts, label_visibility="collapsed", key="wld_sel_box")
     wc1, wc2 = st.columns([1,1])
     with wc1:
         if st.button("✔ Apply", key="wld_apply"):
             i = wld_opts.index(wld_sel)
             st.session_state.preset_welder_no=welders[i]["welder_no"]
+            st.session_state.preset_welder_name=welders[i]["name"]
             st.session_state.welder_expander=False
             st.rerun()
     with wc2:
-        if st.button("Close", key="wld_close"):
+        if st.button("Close Welder List", key="wld_close"):
             st.session_state.welder_expander=False
             st.rerun()
 
-opt_cols = st.columns(3)
-with opt_cols[0]: welder_no = st.text_input("Welder No.", value=st.session_state.get("preset_welder_no",""), placeholder="Welder No.")
-with opt_cols[1]: wps_no    = st.text_input("WPS No.",    value=st.session_state.get("preset_wps_no",""),    placeholder="WPS No.")
-with opt_cols[2]: joint_no  = st.text_input("Joint No.",  value="", placeholder="Joint No.")
+# ── Input fields: 4 columns ──
+opt_cols = st.columns(4)
+with opt_cols[0]:
+    welder_no = st.text_input("Welder No.", value=st.session_state.get("preset_welder_no",""), placeholder="Welder No.")
+with opt_cols[1]:
+    wps_no    = st.text_input("WPS No.",    value=st.session_state.get("preset_wps_no",""),    placeholder="WPS No.")
+with opt_cols[2]:
+    joint_no  = st.text_input("Joint No.",  value="", placeholder="Joint No.")
+with opt_cols[3]:
+    dept      = st.text_input("Dep't",      value="", placeholder="Dep't")
 
-# 5. Weld Pass
+# ── 5. Weld Pass ─────────────────────────────────────────────────────────────
 st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True)
 pass_type = st.radio("Pass",["Root","Fill","Cap"],horizontal=True,label_visibility="collapsed")
 
-# 6. Buttons
+# ── 6. Buttons ───────────────────────────────────────────────────────────────
 bl,bg,br = st.columns([0.475,0.05,0.475])
 with bl:
     save_clicked = st.button("Save Data")
 with br:
     if st.session_state.history:
         csv=pd.DataFrame(st.session_state.history).to_csv(index=False).encode('utf-8-sig')
-        st.download_button("Export",data=csv,file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv",mime="text/csv")
+        now = datetime.now()
+        fname = f"HeatInput Record - {now.strftime('%m%d')}-{now.strftime('%H%M')}.csv"
+        st.download_button("Export", data=csv, file_name=fname, mime="text/csv")
     else:
-        st.button("Export",disabled=True)
+        st.button("Export", disabled=True)
 
 if save_clicked:
-    st.session_state.history.insert(0,{
-        "Time":local_time,"Std":standard,"Prc":process,
-        "HI":round(HI,3),"Res":status,
-        "V":voltage,"A":current,"L":length,"T":time,
-        "WPS No.":wps_no,"Welder No.":welder_no,"Joint No.":joint_no,"Pass":pass_type,
-    })
-    if len(st.session_state.history)>50:
-        st.session_state.history.pop()
-    st.rerun()
+    if len(st.session_state.history) >= 10:
+        st.warning("Maximum 10 records reached. Please export and clear before saving more.")
+    else:
+        st.session_state.history.insert(0,{
+            "Time":local_time,"Std":standard,"Prc":process,
+            "HI":round(HI,3),"Res":status,
+            "V":voltage,"A":current,"L":length,"T":time,
+            "WPS No.":wps_no,"Welder No.":welder_no,"Joint No.":joint_no,"Dep't":dept,"Pass":pass_type,
+        })
+        st.rerun()
 
-# 7. History
+# ── 7. History ────────────────────────────────────────────────────────────────
 if st.session_state.history:
     st.markdown('<div class="section-title">Recent History</div>', unsafe_allow_html=True)
     st.dataframe(pd.DataFrame(st.session_state.history),use_container_width=True)

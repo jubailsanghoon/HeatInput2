@@ -152,10 +152,30 @@ if wps_mode == "Manual":
 elif wps_mode == "Preset":
     presets = st.session_state.wps_presets
 
-    # Import / Sample CSV 버튼
+    # Import / Sample TXT 버튼
+    if 'show_import' not in st.session_state:
+        st.session_state.show_import = False
+
     p_cols = st.columns([1, 1])
     with p_cols[0]:
-        uploaded = st.file_uploader("Import WPS TXT", type="txt", label_visibility="collapsed")
+        if st.button("📂 Import TXT"):
+            st.session_state.show_import = not st.session_state.show_import
+
+    with p_cols[1]:
+        # Sample TXT 생성
+        sample_lines = ["# WPS Preset - Heat Input Master"]
+        sample_lines.append("# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.")
+        sample_lines.append("# Pass: Root / Fill / Cap  |  최대 20행")
+        sample_lines.append("#")
+        for i in range(1, 6):
+            for p in ["Root", "Fill", "Cap"]:
+                sample_lines.append(f"WPS-{i:03d}\t{p}\t0.00\t0.00")
+        sample_txt = "\n".join(sample_lines).encode('utf-8')
+        st.download_button("📄 Sample TXT", data=sample_txt,
+                           file_name="WPS_sample.txt", mime="text/plain")
+
+    if st.session_state.show_import:
+        uploaded = st.file_uploader("TXT 파일 선택", type="txt", label_visibility="visible")
         if uploaded:
             try:
                 lines = uploaded.read().decode('utf-8').splitlines()
@@ -178,25 +198,13 @@ elif wps_mode == "Preset":
                         break
                 if records:
                     st.session_state.wps_presets = records
+                    st.session_state.show_import = False
                     st.success(f"{len(records)}개 WPS 로드 완료")
                     st.rerun()
                 else:
                     st.error("데이터 없음. 형식: WPS번호[TAB]Pass[TAB]Min[TAB]Max")
             except Exception as e:
                 st.error(f"파일 오류: {e}")
-
-    with p_cols[1]:
-        # Sample TXT 생성
-        sample_lines = ["# WPS Preset - Heat Input Master"]
-        sample_lines.append("# 형식: WPS번호\tPass\tH/I Min.\tH/I Max.")
-        sample_lines.append("# Pass: Root / Fill / Cap  |  최대 20행")
-        sample_lines.append("#")
-        for i in range(1, 6):
-            for p in ["Root", "Fill", "Cap"]:
-                sample_lines.append(f"WPS-{i:03d}\t{p}\t0.00\t0.00")
-        sample_txt = "\n".join(sample_lines).encode('utf-8')
-        st.download_button("Sample TXT", data=sample_txt,
-                           file_name="WPS_sample.txt", mime="text/plain")
 
     if presets:
         # 현재 선택된 Preset 표시

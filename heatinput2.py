@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from streamlit_javascript import st_javascript
+import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Heat Input Master")
 
@@ -50,9 +50,52 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 세션 상태 초기화
 if 'history' not in st.session_state:
     st.session_state.history = []
+if 'local_time' not in st.session_state:
+    st.session_state.local_time = ""
 
+# JS로 기기 로컬 시간을 hidden input에 기록 → Streamlit text_input으로 읽기
+components.html("""
+<script>
+    function sendTime() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        const ss = String(now.getSeconds()).padStart(2,'0');
+        const timeStr = hh + ':' + mm + ':' + ss;
+        // Streamlit의 숨겨진 input에 값 주입
+        const inputs = window.parent.document.querySelectorAll('input[type="text"]');
+        for (let inp of inputs) {
+            if (inp.getAttribute('aria-label') === '_local_time_hidden') {
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                    window.HTMLInputElement.prototype, 'value').set;
+                nativeInputValueSetter.call(inp, timeStr);
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                break;
+            }
+        }
+    }
+    // 1초마다 갱신
+    setInterval(sendTime, 1000);
+    sendTime();
+</script>
+""", height=0)
+
+# 숨겨진 text_input으로 JS 시간 수신
+local_time_val = st.text_input("_local_time_hidden", key="_local_time_hidden",
+                                label_visibility="hidden")
+if local_time_val:
+    st.session_state.local_time = local_time_val
+
+def get_local_time():
+    t = st.session_state.get("local_time", "")
+    if t and len(t) == 8:
+        return t
+    return datetime.now().strftime("%H:%M:%S")
+
+# ── Header ──
 st.markdown("""
 <div class="header">
 <img src="https://raw.githubusercontent.com/jubailsanghoon/Heatinput/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg">
@@ -146,10 +189,8 @@ btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
 
 with btn_left:
     if st.button("Save Data"):
-        local_time = st_javascript("new Date().toLocaleTimeString('ko-KR', {hour12: false})")
-        time_str = local_time if isinstance(local_time, str) and len(local_time) > 0 else datetime.now().strftime("%H:%M:%S")
         new_entry = {
-            "Time":       time_str,
+            "Time":       get_local_time(),
             "Std":        standard,
             "Prc":        process,
             "HI":         round(HI, 3),

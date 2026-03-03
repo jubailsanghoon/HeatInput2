@@ -2,118 +2,114 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 페이지 설정
 st.set_page_config(layout="centered", page_title="Heat Input Master")
 
 # ======================================================
-# CSS - 레이아웃 및 디자인 정밀 제어
+# CSS - 레이아웃 및 디자인 정밀 조정
 # ======================================================
 st.markdown("""
 <style>
     /* 상단 여백 최소화 */
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 800px !important;
+        padding-bottom: 0rem !important;
     }
-
-    [data-testid="stAppViewContainer"], .stApp {
+    
+    [data-testid="stAppViewContainer"], .main-container, .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
 
-    /* 헤더 - 폰트 사이즈 조정 및 여백 최적화 */
+    .main-container {
+        max-width: 100% !important;
+        margin: auto;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* 헤더 - 여백 최소화 및 폰트 크기 확대 */
     .header {
         display: flex;
         align-items: center;
-        border-bottom: 4px solid black;
-        padding-bottom: 8px;
-        margin-top: -20px;
-        margin-bottom: 25px;
+        border-bottom: 5px solid black;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+        margin-top: -30px; /* 위쪽 여백 바짝 붙임 */
     }
-    .header img { height: 50px; margin-right: 20px; }
-    .title {
-        font-size: 40px; /* 기존 64px에서 3단계 축소 */
-        font-weight: 900;
+    .header img { height: 50px; margin-right: 15px; }
+    .title { 
+        font-size: 52px; /* 폰트 사이즈 확대 */
+        font-weight: 900; 
         line-height: 1;
-        color: black;
     }
 
-    .section-title {
-        font-size: 18px;
-        font-weight: 900;
-        margin-top: 15px;
-        margin-bottom: 10px;
-        color: black;
-    }
+    .section-title { font-size: 18px; font-weight: 900; margin-top: 15px; margin-bottom: 10px; }
 
-    /* 결과 박스 스타일 - 라운드 형태로 복구 */
-    .result-box-value {
+    /* 결과 박스 - 가로 배치용 스타일 */
+    .result-box-container {
+        display: flex;
+        align-items: center;
         width: 100%;
-        font-size: 28px;
+        gap: 5%; /* 박스 사이 여백 5% */
+    }
+    
+    .result-box-value {
+        width: 50% !important; /* 폭 50% */
+        font-size: 26px;
         font-weight: 900;
         padding: 15px 5px;
         background: #ffe5cc;
         border: 2px solid black;
-        border-radius: 8px;
         text-align: center;
         color: black !important;
+        display: inline-block;
     }
 
     .status-box {
-        width: 100%;
-        font-size: 28px;
+        width: 45% !important; /* 폭 45% */
+        font-size: 26px;
         font-weight: 900;
         padding: 15px 5px;
         border: 2px solid black;
-        border-radius: 8px;
         text-align: center;
+        display: inline-block;
     }
     .pass { background: #00cc44; color: white !important; }
     .fail { background: #ff7f00; color: white !important; }
 
-    /* 버튼 스타일 - 라운드 형태로 복구 */
-    .stButton, .stDownloadButton {
-        width: 100% !important;
-    }
+    /* 버튼 스타일 - 검정 테두리 및 5% 간격 대응 */
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
         height: 65px !important;
-        font-size: 20px !important;
+        font-size: 18px !important;
         font-weight: 900 !important;
         background-color: #f0f0f0 !important;
         color: black !important;
-        border: 2px solid black !important;
-        border-radius: 8px !important;
-        padding: 0px !important;
-    }
-    .stButton > button:hover, .stDownloadButton > button:hover {
-        background-color: #e0e0e0 !important;
-        border-color: #000000 !important;
+        border: 3px solid black !important;
+        border-radius: 0px !important;
     }
 
-    /* 입력 필드 정렬 */
+    /* 입력창 정렬 */
     div[data-testid="stHorizontalBlock"] {
         align-items: center;
     }
 
-    /* 푸터 스타일 - 로고 삭제 대응 */
+    /* 푸터 로고 정렬 */
     .footer {
         display: flex;
-        justify-content: center;
-        margin-top: 50px;
-        border-top: 1px solid #ddd;
-        padding-top: 20px;
+        align-items: center;
+        margin-top: 30px;
+        border-top: 1px solid #eeeeee;
+        padding-top: 15px;
     }
-    .footer-text {
-        font-size: 14px;
-        color: #666;
+    .footer-logo-img {
+        height: 35px;
+        margin-right: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ======================================================
-# 로직 및 세션 데이터 초기화
+# 로직 및 세션 상태
 # ======================================================
 EFFICIENCY = {
     "SAW":  {"AWS": 1.0, "ISO": 1.0},
@@ -126,10 +122,10 @@ if "history" not in st.session_state:
     st.session_state.history = []
 
 def draw_input_row(label, value, key, step=0.1, fmt="%.1f"):
-    cols = st.columns([1.5, 1])
-    with cols[0]:
+    r_cols = st.columns([1.5, 1])
+    with r_cols[0]:
         st.markdown(f"**{label}**")
-    with cols[1]:
+    with r_cols[1]:
         return st.number_input(label, value=value, step=step, format=fmt, key=key, label_visibility="collapsed")
 
 # ======================================================
@@ -144,7 +140,7 @@ st.markdown(
 )
 
 # ======================================================
-# 1. Standard / Process 선택
+# 1. Standard / Process
 # ======================================================
 c_std, c_prc = st.columns([1, 1])
 with c_std:
@@ -154,69 +150,69 @@ with c_prc:
     st.markdown('<div class="section-title">Select Process</div>', unsafe_allow_html=True)
     process = st.radio("Prc", ["SAW", "FCAW", "SMAW", "GMAW"], horizontal=True, label_visibility="collapsed")
 
-k_val = EFFICIENCY[process][standard]
+k = EFFICIENCY[process][standard]
 
 # ======================================================
-# 2. 메인 레이아웃 (Inputs & Result)
+# 2. Main Layout (Inputs & Results)
 # ======================================================
-st.write("---")
-col_input, col_gap, col_result = st.columns([1.2, 0.1, 1.1])
+col_params, col_spacer, col_result = st.columns([1.2, 0.1, 1])
 
-with col_input:
+with col_params:
     st.markdown('<div class="section-title">Input Parameters</div>', unsafe_allow_html=True)
-    volt = draw_input_row("Voltage (V)", 30.0, "v_val")
-    amp  = draw_input_row("Current (A)", 300.0, "a_val")
-    len_mm = draw_input_row("Length (mm)", 5.0, "l_val")
-    time_s = draw_input_row("Time (sec)", 1.0, "t_val")
+    voltage = draw_input_row("Voltage (V)", 30.0, "v")
+    current = draw_input_row("Current (A)", 300.0, "c")
+    length  = draw_input_row("Length (mm)", 5.0, "l")
+    time_s  = draw_input_row("Time (sec)", 1.0, "t")
 
 with col_result:
     st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-    w_min = draw_input_row("Min", 0.96, "min_range", step=0.01, fmt="%.2f")
-    w_max = draw_input_row("Max", 2.50, "max_range", step=0.01, fmt="%.2f")
-
+    w_min = draw_input_row("Min", 0.96, "min_val", step=0.01, fmt="%.2f")
+    w_max = draw_input_row("Max", 2.50, "max_val", step=0.01, fmt="%.2f")
+    
     st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)
-
-    # 입열량 계산: HI = (k * V * A * t) / (L * 1000)
-    hi_res = (k_val * volt * amp * time_s) / (len_mm * 1000) if len_mm > 0 else 0.0
-    res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
-
-    # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치
-    res_cols = st.columns([0.5, 0.05, 0.45])
-    with res_cols[0]:
-        st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
-    with res_cols[2]:
-        st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
+    
+    # 계산 로직
+    HI = (k * voltage * current * time_s) / (length * 1000) if length > 0 else 0.0
+    status = "PASS" if w_min <= HI <= w_max else "FAIL"
+    
+    # 결과 박스 가로 배치 (50% : 45% 및 5% 여백)
+    # Streamlit 컬럼 비율로 구현하여 반응형 대응
+    res_box_cols = st.columns([50, 5, 45])
+    with res_box_cols[0]:
+        st.markdown(f'<div class="result-box-value">{HI:.3f} kJ/mm</div>', unsafe_allow_html=True)
+    with res_box_cols[2]:
+        st.markdown(f'<div class="status-box {status.lower()}">{status}</div>', unsafe_allow_html=True)
 
 # ======================================================
-# 3. 버튼 레이아웃 - Save Data / Export CSV (5% 여백)
+# 3. Save Data & Export CSV (같은 줄, 여백 5%)
 # ======================================================
 st.write("")
-btn_row1 = st.columns([0.475, 0.05, 0.475])
+btn_row1 = st.columns([47.5, 5, 47.5])
 
 with btn_row1[0]:
     if st.button("💾 Save Data"):
-        entry = {
+        new_entry = {
             "Time": datetime.now().strftime("%H:%M:%S"),
-            "Std": standard, "Process": process, "HI": round(hi_res, 3), "Result": res_status,
-            "V": volt, "A": amp, "L": len_mm, "T": time_s
+            "Std": standard, "Prc": process, "HI": round(HI, 3), "Result": status,
+            "V": voltage, "A": current, "L": length, "T": time_s
         }
-        st.session_state.history.insert(0, entry)
+        st.session_state.history.insert(0, new_entry)
         if len(st.session_state.history) > 50: st.session_state.history.pop()
         st.rerun()
 
 with btn_row1[2]:
     if st.session_state.history:
-        csv_out = pd.DataFrame(st.session_state.history).to_csv(index=False).encode("utf-8-sig")
-        st.download_button(label="📤 Export CSV", data=csv_out, file_name=f"HeatInput_{datetime.now().strftime('%m%d_%H%M')}.csv", mime="text/csv")
+        csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode("utf-8-sig")
+        st.download_button(label="📤 Export CSV", data=csv, file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv", mime="text/csv")
     else:
         st.button("📤 Export CSV", disabled=True)
 
 # ======================================================
-# 4. 히스토리 관리 (데이터 존재 시에만 표시)
+# 4. History & Clear (데이터 있을 때만 표시, 여백 5%)
 # ======================================================
 if st.session_state.history:
     st.write("")
-    btn_row2 = st.columns([0.475, 0.05, 0.475])
+    btn_row2 = st.columns([47.5, 5, 47.5])
     with btn_row2[0]:
         st.button("📋 Recent History", disabled=True)
     with btn_row2[2]:
@@ -224,15 +220,17 @@ if st.session_state.history:
             st.session_state.history = []
             st.rerun()
 
-    st.markdown('<div class="section-title">History Records (Max 50)</div>', unsafe_allow_html=True)
+    # 히스토리 테이블
+    st.markdown('<div class="section-title">History Table (Max 50)</div>', unsafe_allow_html=True)
     st.table(pd.DataFrame(st.session_state.history))
 
 # ======================================================
-# 5. Footer - 이메일만 표시 (로고 삭제)
+# 5. Footer - 로고 및 연락처
 # ======================================================
 st.markdown(
     f'<div class="footer">'
+    f'<img class="footer-logo-img" src="https://raw.githubusercontent.com/jubailsanghoon/HeatInput2/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg" />'
     f'<div class="footer-text"><b>Jubail.sanghoon@gmail.com</b></div>'
     f'</div>',
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )

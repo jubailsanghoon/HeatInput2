@@ -64,6 +64,16 @@ st.markdown("""
         min-height: unset !important;
     }
     [data-testid="stFileUploaderDropzoneInstructions"] { display: none !important; }
+    /* Browse files 버튼 흰색 */
+    [data-testid="stFileUploader"] button {
+        background-color: #f0f0f0 !important;
+        color: #000000 !important;
+        border: 1px solid #cccccc !important;
+        height: auto !important;
+        min-height: unset !important;
+        font-size: 13px !important;
+        padding: 4px 10px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,6 +104,8 @@ if 'preset_max'     not in st.session_state: st.session_state.preset_max     = N
 if 'preset_label'   not in st.session_state: st.session_state.preset_label   = ""
 if 'show_import'    not in st.session_state: st.session_state.show_import    = False
 if 'expander_open'  not in st.session_state: st.session_state.expander_open  = False
+if 'preset_wps_no'  not in st.session_state: st.session_state.preset_wps_no  = ""
+
 
 def get_presets():
     return st.session_state.wps_presets if st.session_state.wps_presets is not None else DEFAULT_PRESETS
@@ -228,31 +240,27 @@ elif wps_mode == "Preset":
     else:
         st.caption("아래 목록에서 WPS를 선택하세요")
 
-    # View WPS List expander
+    # View WPS List expander - 한 줄 selectbox 방식
     with st.expander("📋 View WPS List", expanded=st.session_state.expander_open):
-        # 헤더
-        h = st.columns([3, 2, 3, 1])
-        h[0].markdown("**WPS No.**")
-        h[1].markdown("**Pass**")
-        h[2].markdown("**Min / Max**")
-        h[3].markdown("**✔**")
-        st.divider()
-        for idx, item in enumerate(presets):
-            r = st.columns([3, 2, 3, 1])
-            r[0].write(item["wps_no"])
-            r[1].write(item["pass"])
-            r[2].write(f"{item['hi_min']} ~ {item['hi_max']}")
-            if r[3].button("✔", key=f"sel_{idx}"):
-                st.session_state.preset_min    = item["hi_min"]
-                st.session_state.preset_max    = item["hi_max"]
-                st.session_state.preset_label  = f"{item['wps_no']} / {item['pass']}"
-                st.session_state.expander_open = False
-                st.rerun()
+        options = [f"{item['wps_no']}  {item['pass']}  {item['hi_min']} ~ {item['hi_max']}" for item in presets]
+        selected_str = st.selectbox("WPS 선택", options, label_visibility="collapsed")
+        if st.button("✔ 선택 적용"):
+            idx = options.index(selected_str)
+            item = presets[idx]
+            st.session_state.preset_min    = item["hi_min"]
+            st.session_state.preset_max    = item["hi_max"]
+            st.session_state.preset_label  = f"{item['wps_no']} / {item['pass']}"
+            st.session_state.preset_wps_no = item["wps_no"]
+            st.session_state.expander_open = False
+            st.rerun()
 
     min_range = st.session_state.preset_min
     max_range = st.session_state.preset_max
 
 # Default: 판정 없음
+if wps_mode != "Preset":
+    st.session_state.preset_wps_no = ""
+
 
 # 3. Input Parameters & Live Result
 st.write("")
@@ -290,7 +298,7 @@ with col_right:
 # 4. Optional Info
 st.markdown('<div class="section-title">Optional Info</div>', unsafe_allow_html=True)
 opt_cols = st.columns(3)
-with opt_cols[0]: wps_no    = st.text_input("WPS No.",    value="", placeholder="WPS No.")
+with opt_cols[0]: wps_no    = st.text_input("WPS No.",    value=st.session_state.get("preset_wps_no",""), placeholder="WPS No.")
 with opt_cols[1]: welder_no = st.text_input("Welder No.", value="", placeholder="Welder No.")
 with opt_cols[2]: joint_no  = st.text_input("Joint No.",  value="", placeholder="Joint No.")
 

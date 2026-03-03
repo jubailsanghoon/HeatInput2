@@ -33,7 +33,7 @@ st.markdown("""
     }
     .header img { height: 50px; margin-right: 20px; }
     .title { 
-        font-size: 40px; /* 기존 64px에서 3단계 축소 */
+        font-size: 24px; 
         font-weight: 900; 
         line-height: 1;
         color: black;
@@ -47,7 +47,7 @@ st.markdown("""
         color: black;
     }
 
-    /* 결과 박스 스타일 - 라운드 형태로 복구 */
+    /* 결과 박스 스타일 */
     .result-box-value {
         width: 100%;
         font-size: 28px;
@@ -72,7 +72,7 @@ st.markdown("""
     .pass { background: #00cc44; color: white !important; }
     .fail { background: #ff7f00; color: white !important; }
 
-    /* 버튼 스타일 - 라운드 형태로 복구 */
+    /* 버튼 스타일 */
     .stButton, .stDownloadButton {
         width: 100% !important;
     }
@@ -97,7 +97,7 @@ st.markdown("""
         align-items: center;
     }
     
-    /* 푸터 스타일 - 로고 삭제 대응 */
+    /* 푸터 스타일 */
     .footer {
         display: flex;
         justify-content: center;
@@ -171,24 +171,43 @@ with col_input:
 
 with col_result:
     st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-    w_min = draw_input_row("Min", 0.96, "min_range", step=0.01, fmt="%.2f")
-    w_max = draw_input_row("Max", 2.50, "max_range", step=0.01, fmt="%.2f")
+    # WPS Range 모드 선택 라디오 버튼
+    wps_mode = st.radio("WPS Mode", ["Input", "No input"], horizontal=True, label_visibility="collapsed")
     
+    if wps_mode == "Input":
+        # Min/Max를 한 줄에 나란히 배치 (입력창 폭 줄임)
+        w_cols = st.columns([1, 1])
+        with w_cols[0]:
+            m_row = st.columns([0.8, 1.2])
+            with m_row[0]: st.markdown("**Min.**")
+            with m_row[1]: w_min = st.number_input("Min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
+        with w_cols[1]:
+            x_row = st.columns([0.8, 1.2])
+            with x_row[0]: st.markdown("**Max.**")
+            with x_row[1]: w_max = st.number_input("Max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
+    else:
+        w_min, w_max = 0.0, 0.0
+
     st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)
     
     # 입열량 계산: HI = (k * V * A * t) / (L * 1000)
     hi_res = (k_val * volt * amp * time_s) / (len_mm * 1000) if len_mm > 0 else 0.0
-    res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
     
-    # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치
-    res_cols = st.columns([0.5, 0.05, 0.45])
-    with res_cols[0]:
+    if wps_mode == "Input":
+        res_status = "PASS" if w_min <= hi_res <= w_max else "FAIL"
+        # [결과값 50% | 여백 5% | PASS-FAIL 45%] 한 줄 배치
+        res_cols = st.columns([0.5, 0.05, 0.45])
+        with res_cols[0]:
+            st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
+        with res_cols[2]:
+            st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
+    else:
+        # No input 선택 시 PASS/FAIL 판정 안함 (결과값만 표시)
+        res_status = "N/A"
         st.markdown(f'<div class="result-box-value">{hi_res:.3f} kJ/mm</div>', unsafe_allow_html=True)
-    with res_cols[2]:
-        st.markdown(f'<div class="status-box {res_status.lower()}">{res_status}</div>', unsafe_allow_html=True)
 
 # ======================================================
-# 3. 버튼 레이아웃 - Save Data / Export CSV (5% 여백)
+# 3. 버튼 레이아웃 - Save Data / Export CSV (같은 줄 배치)
 # ======================================================
 st.write("")
 btn_row1 = st.columns([0.475, 0.05, 0.475])
@@ -228,7 +247,7 @@ if st.session_state.history:
     st.table(pd.DataFrame(st.session_state.history))
 
 # ======================================================
-# 5. Footer - 이메일만 표시 (로고 삭제)
+# 5. Footer - 이메일만 표시
 # ======================================================
 st.markdown(
     f'<div class="footer">'

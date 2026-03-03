@@ -53,19 +53,41 @@ st.markdown("""
 # ── 세션 상태 초기화 ──
 if 'history' not in st.session_state:
     st.session_state.history = []
-if 'local_time' not in st.session_state:
-    st.session_state.local_time = ""
 
-# ── query_params에서 로컬 시간 읽기 (JS가 저장 버튼 클릭 시 URL에 기록) ──
+# ── query_params에서 로컬 시간 읽기 ──
 params = st.query_params
-if "localtime" in params:
-    st.session_state.local_time = params["localtime"]
+local_time = params.get("localtime", "")
+if not (local_time and len(local_time) == 8):
+    local_time = datetime.now().strftime("%H:%M:%S")
 
-def get_local_time():
-    t = st.session_state.get("local_time", "")
-    if t and len(t) == 8:
-        return t
-    return datetime.now().strftime("%H:%M:%S")
+# ── JS: Save Data 버튼에 mousedown 시 로컬 시간을 URL에 기록 ──
+components.html("""
+<script>
+(function() {
+    function attachListener() {
+        const buttons = window.parent.document.querySelectorAll('button');
+        for (let btn of buttons) {
+            if (btn.innerText.trim() === 'Save Data' && !btn._timeListenerAttached) {
+                btn._timeListenerAttached = true;
+                btn.addEventListener('mousedown', function() {
+                    const now = new Date();
+                    const t = String(now.getHours()).padStart(2,'0') + ':'
+                            + String(now.getMinutes()).padStart(2,'0') + ':'
+                            + String(now.getSeconds()).padStart(2,'0');
+                    const url = new URL(window.parent.location.href);
+                    url.searchParams.set('localtime', t);
+                    window.parent.history.replaceState({}, '', url);
+                });
+            }
+        }
+    }
+    // DOM 변경 감지해서 버튼이 생길 때마다 리스너 부착
+    const observer = new MutationObserver(attachListener);
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    attachListener();
+})();
+</script>
+""", height=0)
 
 # ── Header ──
 st.markdown("""
@@ -157,46 +179,12 @@ st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True
 pass_type = st.radio("Pass", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed")
 
 # 6. Buttons
-# Streamlit 실제 버튼 (숨김 CSS 적용)
-st.markdown("""
-<style>
-div[data-testid="stButton"] button[kind="secondary"]#save_btn_hidden,
-div.hide-save-btn { display: none !important; }
-</style>
-""", unsafe_allow_html=True)
+btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
 
-btn_cols = st.columns([1, 0.05, 1])
-with btn_cols[0]:
-    # JS Save 버튼
-    components.html("""
-<script>
-function injectTimeAndSave() {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const ss = String(now.getSeconds()).padStart(2,'0');
-    const timeStr = hh + ':' + mm + ':' + ss;
-    const url = new URL(window.parent.location.href);
-    url.searchParams.set('localtime', timeStr);
-    window.parent.history.replaceState({}, '', url);
-    const buttons = window.parent.document.querySelectorAll('button');
-    for (let btn of buttons) {
-        if (btn.innerText.trim() === '_SAVE_HIDDEN_') {
-            btn.click();
-            break;
-        }
-    }
-}
-</script>
-<button onclick="injectTimeAndSave()" style="
-    width:100%; height:56px; font-size:16px; font-weight:900;
-    background:#f0f0f0; color:black; border:2px solid black;
-    border-radius:4px; cursor:pointer;">
-    Save Data
-</button>
-""", height=65)
+with btn_left:
+    save_clicked = st.button("Save Data")
 
-with btn_cols[2]:
+with btn_right:
     if st.session_state.history:
         csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode('utf-8-sig')
         st.download_button(
@@ -208,14 +196,9 @@ with btn_cols[2]:
     else:
         st.button("Export", disabled=True)
 
-# 숨겨진 실제 Streamlit 버튼 - JS가 트리거
-st.markdown('<div class="hide-save-btn">', unsafe_allow_html=True)
-save_clicked = st.button("_SAVE_HIDDEN_", key="save_btn_hidden")
-st.markdown('</div>', unsafe_allow_html=True)
-
 if save_clicked:
     new_entry = {
-        "Time":       get_local_time(),
+        "Time":       local_time,
         "Std":        standard,
         "Prc":        process,
         "HI":         round(HI, 3),

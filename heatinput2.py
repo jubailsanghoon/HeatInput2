@@ -2,8 +2,13 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import streamlit.components.v1 as components
+import io
 
-st.set_page_config(layout="centered", page_title="Heat Input Master", page_icon="https://raw.githubusercontent.com/jubailsanghoon/Heatinput/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg")
+st.set_page_config(
+    layout="centered",
+    page_title="Heat Input Master",
+    page_icon="https://raw.githubusercontent.com/jubailsanghoon/Heatinput/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg"
+)
 
 st.markdown("""
 <style>
@@ -47,20 +52,45 @@ st.markdown("""
         align-items: center;
         gap: 0.5rem;
     }
+    /* 오버레이 */
+    .overlay-backdrop {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.45); z-index:9998;
+    }
+    .overlay-box {
+        position: fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        background:#fff; border:2px solid black; border-radius:8px;
+        padding:20px; z-index:9999; width:90%; max-width:480px;
+        max-height:80vh; overflow-y:auto;
+    }
+    .overlay-title { font-size:16px; font-weight:900; margin-bottom:12px; border-bottom:2px solid black; padding-bottom:6px; }
+    .wps-row {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:8px 4px; border-bottom:1px solid #eee; font-size:13px;
+    }
+    .wps-row:hover { background:#f5f5f5; }
+    .wps-select-btn {
+        background:#000; color:#fff; border:none; border-radius:4px;
+        padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ── 세션 상태 초기화 ──
-if 'history' not in st.session_state:
-    st.session_state.history = []
+if 'history'      not in st.session_state: st.session_state.history      = []
+if 'wps_presets'  not in st.session_state: st.session_state.wps_presets  = []  # [{wps_no, pass, hi_min, hi_max}]
+if 'show_overlay' not in st.session_state: st.session_state.show_overlay = False
+if 'preset_min'   not in st.session_state: st.session_state.preset_min   = None
+if 'preset_max'   not in st.session_state: st.session_state.preset_max   = None
+if 'preset_label' not in st.session_state: st.session_state.preset_label = ""
 
-# ── query_params에서 로컬 시간 읽기 ──
-params = st.query_params
+# ── query_params 로컬 시간 ──
+params     = st.query_params
 local_time = params.get("localtime", "")
 if not (local_time and len(local_time) == 8):
     local_time = datetime.now().strftime("%H:%M:%S")
 
-# ── JS: Save Data 버튼에 mousedown 시 로컬 시간을 URL에 기록 ──
+# ── JS mousedown 리스너 ──
 components.html("""
 <script>
 (function() {
@@ -81,7 +111,6 @@ components.html("""
             }
         }
     }
-    // DOM 변경 감지해서 버튼이 생길 때마다 리스너 부착
     const observer = new MutationObserver(attachListener);
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
     attachListener();
@@ -108,21 +137,111 @@ with c_prc:
 
 # 2. WPS Range
 st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-wps_input_mode = st.radio("WPS Mode", ["Input", "No input"], horizontal=True, label_visibility="collapsed")
+wps_mode = st.radio("WPS Mode", ["Manual", "Preset", "Default"], horizontal=True, label_visibility="collapsed")
 
-if wps_input_mode == "Input":
+min_range = None
+max_range = None
+
+if wps_mode == "Manual":
     w_cols = st.columns([0.5, 1.5, 0.5, 1.5])
-    with w_cols[0]:
-        st.markdown("**Min**")
-    with w_cols[1]:
-        min_range = st.number_input("min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
-    with w_cols[2]:
-        st.markdown("**Max**")
-    with w_cols[3]:
-        max_range = st.number_input("max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
-else:
-    min_range = None
-    max_range = None
+    with w_cols[0]: st.markdown("**Min**")
+    with w_cols[1]: min_range = st.number_input("min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
+    with w_cols[2]: st.markdown("**Max**")
+    with w_cols[3]: max_range = st.number_input("max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
+
+elif wps_mode == "Preset":
+    presets = st.session_state.wps_presets
+
+    # Import / Sample CSV 버튼
+    p_cols = st.columns([1, 1])
+    with p_cols[0]:
+        uploaded = st.file_uploader("Import WPS CSV", type="csv", label_visibility="collapsed")
+        if uploaded:
+            try:
+                df_up = pd.read_csv(uploaded)
+                df_up.columns = [c.strip() for c in df_up.columns]
+                required_cols = {"WPS No.", "Pass", "H/I Min.", "H/I Max."}
+                if required_cols.issubset(set(df_up.columns)):
+                    df_up = df_up.head(20)
+                    records = []
+                    for _, row in df_up.iterrows():
+                        records.append({
+                            "wps_no":  str(row["WPS No."]).strip(),
+                            "pass":    str(row["Pass"]).strip(),
+                            "hi_min":  float(row["H/I Min."]),
+                            "hi_max":  float(row["H/I Max."]),
+                        })
+                    st.session_state.wps_presets = records
+                    st.success(f"{len(records)}개 WPS 로드 완료")
+                    st.rerun()
+                else:
+                    st.error("컬럼명 확인: WPS No. / Pass / H/I Min. / H/I Max.")
+            except Exception as e:
+                st.error(f"파일 오류: {e}")
+
+    with p_cols[1]:
+        # Sample CSV 생성
+        sample_rows = []
+        for i in range(1, 6):
+            for p in ["Root", "Fill", "Cap"]:
+                sample_rows.append({"WPS No.": f"WPS-{i:03d}", "Pass": p, "H/I Min.": "", "H/I Max.": ""})
+        sample_df  = pd.DataFrame(sample_rows)
+        sample_csv = sample_df.to_csv(index=False).encode('utf-8-sig')
+        st.download_button("Sample CSV", data=sample_csv,
+                           file_name="WPS_sample.csv", mime="text/csv")
+
+    if presets:
+        # 현재 선택된 Preset 표시
+        if st.session_state.preset_label:
+            st.info(f"선택됨: {st.session_state.preset_label}  |  Min: {st.session_state.preset_min}  Max: {st.session_state.preset_max}")
+        else:
+            st.info("아래 버튼으로 WPS를 선택하세요")
+
+        # WPS 선택 버튼
+        if st.button("📋 WPS 목록 선택"):
+            st.session_state.show_overlay = True
+
+        # 오버레이 모달
+        if st.session_state.show_overlay:
+            st.markdown('<div class="overlay-backdrop"></div>', unsafe_allow_html=True)
+            with st.container():
+                st.markdown('<div class="overlay-box">', unsafe_allow_html=True)
+                st.markdown("**WPS 선택** — 항목을 클릭하세요")
+                st.markdown("---")
+
+                # 테이블 헤더
+                hdr = st.columns([2, 1, 1, 1, 0.8])
+                hdr[0].markdown("**WPS No.**")
+                hdr[1].markdown("**Pass**")
+                hdr[2].markdown("**Min**")
+                hdr[3].markdown("**Max**")
+                hdr[4].markdown("")
+
+                for idx, item in enumerate(presets):
+                    row = st.columns([2, 1, 1, 1, 0.8])
+                    row[0].write(item["wps_no"])
+                    row[1].write(item["pass"])
+                    row[2].write(item["hi_min"])
+                    row[3].write(item["hi_max"])
+                    if row[4].button("선택", key=f"sel_{idx}"):
+                        st.session_state.preset_min   = item["hi_min"]
+                        st.session_state.preset_max   = item["hi_max"]
+                        st.session_state.preset_label = f"{item['wps_no']} / {item['pass']}"
+                        st.session_state.show_overlay = False
+                        st.rerun()
+
+                if st.button("닫기"):
+                    st.session_state.show_overlay = False
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        min_range = st.session_state.preset_min
+        max_range = st.session_state.preset_max
+
+    else:
+        st.warning("등록된 WPS Preset이 없습니다. Import 또는 Sample CSV를 참고하세요.")
+
+# Default: min_range = max_range = None → 판정 없음
 
 # 3. Input Parameters & Live Result
 st.write("")
@@ -133,17 +252,15 @@ with col_left:
 
     def draw_input_row(label, value, key):
         r_cols = st.columns([1.5, 2])
-        with r_cols[0]:
-            st.markdown(f"**{label}**")
-        with r_cols[1]:
-            return st.number_input(label, value=value, step=0.1, format="%.1f", key=key, label_visibility="collapsed")
+        with r_cols[0]: st.markdown(f"**{label}**")
+        with r_cols[1]: return st.number_input(label, value=value, step=0.1, format="%.1f", key=key, label_visibility="collapsed")
 
-    voltage = draw_input_row("Volt (V)", 30.0, "v")
-    current = draw_input_row("Amp (A)", 300.0, "c")
-    length  = draw_input_row("Len (mm)", 5.0, "l")
-    time    = draw_input_row("Time (s)", 1.0, "t")
+    voltage = draw_input_row("Volt (V)",  30.0,  "v")
+    current = draw_input_row("Amp (A)",  300.0,  "c")
+    length  = draw_input_row("Len (mm)",   5.0,  "l")
+    time    = draw_input_row("Time (s)",   1.0,  "t")
 
-k = 1.0 if standard == "AWS" else {"SAW": 1.0, "GMAW": 0.8, "FCAW": 0.8, "SMAW": 0.8}.get(process, 0.8)
+k  = 1.0 if standard == "AWS" else {"SAW": 1.0, "GMAW": 0.8, "FCAW": 0.8, "SMAW": 0.8}.get(process, 0.8)
 HI = (k * voltage * current * time) / (length * 1000) if length > 0 else 0
 
 if min_range is not None and max_range is not None:
@@ -153,12 +270,7 @@ else:
 
 with col_right:
     st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)
-    if status == "PASS":
-        box_class = "result-box-pass"
-    elif status == "FAIL":
-        box_class = "result-box-fail"
-    else:
-        box_class = "result-box-none"
+    box_class = "result-box-pass" if status == "PASS" else ("result-box-fail" if status == "FAIL" else "result-box-none")
     st.markdown(
         f'<div class="{box_class}">{HI:.3f} kJ/mm<br><span style="font-size:14px;">{status}</span></div>',
         unsafe_allow_html=True
@@ -167,12 +279,9 @@ with col_right:
 # 4. Optional Info
 st.markdown('<div class="section-title">Optional Info</div>', unsafe_allow_html=True)
 opt_cols = st.columns(3)
-with opt_cols[0]:
-    wps_no = st.text_input("WPS No.", value="", placeholder="WPS No.")
-with opt_cols[1]:
-    welder_no = st.text_input("Welder No.", value="", placeholder="Welder No.")
-with opt_cols[2]:
-    joint_no = st.text_input("Joint No.", value="", placeholder="Joint No.")
+with opt_cols[0]: wps_no    = st.text_input("WPS No.",    value="", placeholder="WPS No.")
+with opt_cols[1]: welder_no = st.text_input("Welder No.", value="", placeholder="Welder No.")
+with opt_cols[2]: joint_no  = st.text_input("Joint No.",  value="", placeholder="Joint No.")
 
 # 5. Weld Pass
 st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True)
@@ -187,12 +296,9 @@ with btn_left:
 with btn_right:
     if st.session_state.history:
         csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode('utf-8-sig')
-        st.download_button(
-            label="Export",
-            data=csv,
-            file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv",
-            mime="text/csv"
-        )
+        st.download_button(label="Export", data=csv,
+                           file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv",
+                           mime="text/csv")
     else:
         st.button("Export", disabled=True)
 

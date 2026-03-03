@@ -24,7 +24,7 @@ st.markdown("""
         font-family: 'Segoe UI', sans-serif;
         padding: 10px;
     }
-    .header { display:flex; align-items:center; border-bottom:4px solid black; padding-bottom:10px; margin-bottom:15px; }
+    .header { display:flex; align-items:center; border-bottom:4px solid #FF7F00; padding-bottom:10px; margin-bottom:15px; }
     .header img { height:40px; margin-right:10px; }
     .title { font-size:22px; font-weight:900; }
     .section-title { font-size:16px; font-weight:900; margin-top:12px; margin-bottom:8px; }
@@ -64,6 +64,26 @@ st.markdown("""
         min-height: unset !important;
     }
     [data-testid="stFileUploaderDropzoneInstructions"] { display: none !important; }
+    /* Selectbox 흰색 */
+    [data-testid="stSelectbox"] > div > div {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    div[data-baseweb="popover"] ul {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    div[data-baseweb="popover"] li {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    div[data-baseweb="popover"] li:hover {
+        background-color: #f0f0f0 !important;
+    }
     /* Browse files 버튼 흰색 */
     [data-testid="stFileUploader"] button {
         background-color: #f0f0f0 !important;

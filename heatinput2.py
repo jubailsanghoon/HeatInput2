@@ -125,6 +125,14 @@ def draw_input_row(label, value, key, step=0.1, fmt="%.1f"):
 # ======================================================
 if "history" not in st.session_state:
     st.session_state.history = []
+if "wps_no" not in st.session_state:
+    st.session_state.wps_no = ""
+if "welder_no" not in st.session_state:
+    st.session_state.welder_no = ""
+if "joint_no" not in st.session_state:
+    st.session_state.joint_no = ""
+if "pass_type" not in st.session_state:
+    st.session_state.pass_type = "Root"
 
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
@@ -215,26 +223,9 @@ for err in errors:
     st.error(err)
 
 # ======================================================
-# 4. Optional Info Fields
+# 4. 버튼 구역
 # ======================================================
-st.markdown('<div class="section-title">Additional Info <span style="font-weight:400; font-size:13px; color:#888;">(선택 입력)</span></div>', unsafe_allow_html=True)
-
-opt_col1, opt_col2 = st.columns(2)
-with opt_col1:
-    wps_no    = st.text_input("WPS No.", placeholder="예) WPS-001", label_visibility="visible")
-with opt_col2:
-    welder_no = st.text_input("Welder No.", placeholder="예) W-123", label_visibility="visible")
-
-opt_col3, opt_col4 = st.columns(2)
-with opt_col3:
-    joint_no  = st.text_input("Joint No.", placeholder="예) J-01", label_visibility="visible")
-with opt_col4:
-    st.markdown("**Pass Type**")
-    pass_type = st.radio("Pass Type", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed")
-
-# ======================================================
-# 5. 버튼 구역
-# ======================================================
+st.write("")
 b_cols = st.columns([10, 1, 10])
 
 with b_cols[0]:
@@ -242,10 +233,10 @@ with b_cols[0]:
     if st.button("Save Data", disabled=save_disabled):
         new_entry = {
             "Time":      datetime.now().strftime("%H:%M:%S"),
-            "WPS No.":   wps_no if wps_no else "-",
-            "Pass":      pass_type,
-            "Welder":    welder_no if welder_no else "-",
-            "Joint":     joint_no if joint_no else "-",
+            "WPS No.":   st.session_state.wps_no if st.session_state.wps_no else "-",
+            "Pass":      st.session_state.pass_type,
+            "Welder":    st.session_state.welder_no if st.session_state.welder_no else "-",
+            "Joint":     st.session_state.joint_no if st.session_state.joint_no else "-",
             "Std":       standard,
             "Prc":       process,
             "k":         k,
@@ -275,6 +266,25 @@ with b_cols[2]:
         )
     else:
         st.button("Export CSV", disabled=True)
+
+# ======================================================
+# 5. Optional Info Fields
+# ======================================================
+st.write("")
+st.markdown('<div class="section-title">Additional Info <span style="font-weight:400; font-size:13px; color:#888;">(선택 입력)</span></div>', unsafe_allow_html=True)
+
+opt_col1, opt_col2 = st.columns(2)
+with opt_col1:
+    wps_no    = st.text_input("WPS No.", placeholder="예) WPS-001", key="wps_no")
+with opt_col2:
+    welder_no = st.text_input("Welder No.", placeholder="예) W-123", key="welder_no")
+
+opt_col3, opt_col4 = st.columns(2)
+with opt_col3:
+    joint_no  = st.text_input("Joint No.", placeholder="예) J-01", key="joint_no")
+with opt_col4:
+    st.markdown("**Pass Type**")
+    pass_type = st.radio("Pass Type", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed", key="pass_type")
 
 # ======================================================
 # 6. 히스토리 테이블

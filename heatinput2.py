@@ -50,44 +50,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 세션 상태 초기화
+# ── 세션 상태 초기화 ──
 if 'history' not in st.session_state:
     st.session_state.history = []
 if 'local_time' not in st.session_state:
     st.session_state.local_time = ""
 
-# JS로 기기 로컬 시간을 hidden input에 기록 → Streamlit text_input으로 읽기
-components.html("""
-<script>
-    function sendTime() {
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2,'0');
-        const mm = String(now.getMinutes()).padStart(2,'0');
-        const ss = String(now.getSeconds()).padStart(2,'0');
-        const timeStr = hh + ':' + mm + ':' + ss;
-        // Streamlit의 숨겨진 input에 값 주입
-        const inputs = window.parent.document.querySelectorAll('input[type="text"]');
-        for (let inp of inputs) {
-            if (inp.getAttribute('aria-label') === '_local_time_hidden') {
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                    window.HTMLInputElement.prototype, 'value').set;
-                nativeInputValueSetter.call(inp, timeStr);
-                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                break;
-            }
-        }
-    }
-    // 1초마다 갱신
-    setInterval(sendTime, 1000);
-    sendTime();
-</script>
-""", height=0)
-
-# 숨겨진 text_input으로 JS 시간 수신
-local_time_val = st.text_input("_local_time_hidden", key="_local_time_hidden",
-                                label_visibility="hidden")
-if local_time_val:
-    st.session_state.local_time = local_time_val
+# ── query_params에서 로컬 시간 읽기 (JS가 저장 버튼 클릭 시 URL에 기록) ──
+params = st.query_params
+if "localtime" in params:
+    st.session_state.local_time = params["localtime"]
 
 def get_local_time():
     t = st.session_state.get("local_time", "")
@@ -185,31 +157,47 @@ st.markdown('<div class="section-title">Weld Pass</div>', unsafe_allow_html=True
 pass_type = st.radio("Pass", ["Root", "Fill", "Cap"], horizontal=True, label_visibility="collapsed")
 
 # 6. Buttons
-btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
+# JS: Save 버튼 클릭 시 현재 로컬시간을 URL query param에 기록 후 Streamlit 버튼 클릭 트리거
+components.html("""
+<script>
+function injectTimeAndSave() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const timeStr = hh + ':' + mm + ':' + ss;
 
-with btn_left:
-    if st.button("Save Data"):
-        new_entry = {
-            "Time":       get_local_time(),
-            "Std":        standard,
-            "Prc":        process,
-            "HI":         round(HI, 3),
-            "Res":        status,
-            "V":          voltage,
-            "A":          current,
-            "L":          length,
-            "T":          time,
-            "WPS No.":    wps_no,
-            "Welder No.": welder_no,
-            "Joint No.":  joint_no,
-            "Pass":       pass_type,
+    // URL query param 갱신
+    const url = new URL(window.parent.location.href);
+    url.searchParams.set('localtime', timeStr);
+    window.parent.history.replaceState({}, '', url);
+
+    // Streamlit의 실제 Save Data 버튼 클릭
+    const buttons = window.parent.document.querySelectorAll('button[kind="secondary"], button');
+    for (let btn of buttons) {
+        if (btn.innerText.trim() === 'Save Data') {
+            btn.click();
+            break;
         }
-        st.session_state.history.insert(0, new_entry)
-        if len(st.session_state.history) > 50:
-            st.session_state.history.pop()
-        st.rerun()
+    }
+}
+</script>
+<button onclick="injectTimeAndSave()" style="
+    width:100%; height:56px; font-size:16px; font-weight:900;
+    background:#f0f0f0; color:black; border:2px solid black;
+    border-radius:4px; cursor:pointer; margin-top:4px;">
+    Save Data
+</button>
+""", height=70)
 
-with btn_right:
+# 실제 Streamlit Save 버튼 (숨김 처리 - JS 버튼이 대신 클릭)
+save_cols = st.columns([1, 0.05, 1])
+with save_cols[0]:
+    st.markdown('<div style="display:none">', unsafe_allow_html=True)
+    save_clicked = st.button("Save Data", key="save_btn_hidden")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with save_cols[2]:
     if st.session_state.history:
         csv = pd.DataFrame(st.session_state.history).to_csv(index=False).encode('utf-8-sig')
         st.download_button(
@@ -220,6 +208,27 @@ with btn_right:
         )
     else:
         st.button("Export", disabled=True)
+
+if save_clicked:
+    new_entry = {
+        "Time":       get_local_time(),
+        "Std":        standard,
+        "Prc":        process,
+        "HI":         round(HI, 3),
+        "Res":        status,
+        "V":          voltage,
+        "A":          current,
+        "L":          length,
+        "T":          time,
+        "WPS No.":    wps_no,
+        "Welder No.": welder_no,
+        "Joint No.":  joint_no,
+        "Pass":       pass_type,
+    }
+    st.session_state.history.insert(0, new_entry)
+    if len(st.session_state.history) > 50:
+        st.session_state.history.pop()
+    st.rerun()
 
 # 7. History
 if st.session_state.history:

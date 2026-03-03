@@ -203,45 +203,26 @@ elif wps_mode == "Preset":
         if st.session_state.preset_label:
             st.info(f"선택됨: {st.session_state.preset_label}  |  Min: {st.session_state.preset_min}  Max: {st.session_state.preset_max}")
         else:
-            st.info("아래 버튼으로 WPS를 선택하세요")
+            st.info("아래 목록에서 WPS를 선택하세요")
 
-        # WPS 선택 버튼
-        if st.button("📋 WPS 목록 선택"):
-            st.session_state.show_overlay = True
-
-        # 오버레이 모달
-        if st.session_state.show_overlay:
-            st.markdown('<div class="overlay-backdrop"></div>', unsafe_allow_html=True)
-            with st.container():
-                st.markdown('<div class="overlay-box">', unsafe_allow_html=True)
-                st.markdown("**WPS 선택** — 항목을 클릭하세요")
-                st.markdown("---")
-
-                # 테이블 헤더
-                hdr = st.columns([2, 1, 1, 1, 0.8])
-                hdr[0].markdown("**WPS No.**")
-                hdr[1].markdown("**Pass**")
-                hdr[2].markdown("**Min**")
-                hdr[3].markdown("**Max**")
-                hdr[4].markdown("")
-
-                for idx, item in enumerate(presets):
-                    row = st.columns([2, 1, 1, 1, 0.8])
-                    row[0].write(item["wps_no"])
-                    row[1].write(item["pass"])
-                    row[2].write(item["hi_min"])
-                    row[3].write(item["hi_max"])
-                    if row[4].button("선택", key=f"sel_{idx}"):
-                        st.session_state.preset_min   = item["hi_min"]
-                        st.session_state.preset_max   = item["hi_max"]
-                        st.session_state.preset_label = f"{item['wps_no']} / {item['pass']}"
-                        st.session_state.show_overlay = False
-                        st.rerun()
-
-                if st.button("닫기"):
-                    st.session_state.show_overlay = False
+        with st.expander("📋 View WPS List", expanded=False):
+            hdr = st.columns([2, 1, 1, 1, 0.8])
+            hdr[0].markdown("**WPS No.**")
+            hdr[1].markdown("**Pass**")
+            hdr[2].markdown("**Min**")
+            hdr[3].markdown("**Max**")
+            hdr[4].markdown("")
+            for idx, item in enumerate(presets):
+                row = st.columns([2, 1, 1, 1, 0.8])
+                row[0].write(item["wps_no"])
+                row[1].write(item["pass"])
+                row[2].write(item["hi_min"])
+                row[3].write(item["hi_max"])
+                if row[4].button("선택", key=f"sel_{idx}"):
+                    st.session_state.preset_min   = item["hi_min"]
+                    st.session_state.preset_max   = item["hi_max"]
+                    st.session_state.preset_label = f"{item['wps_no']} / {item['pass']}"
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
 
         min_range = st.session_state.preset_min
         max_range = st.session_state.preset_max

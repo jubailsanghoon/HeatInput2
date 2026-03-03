@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import streamlit.components.v1 as components
 
-st.set_page_config(layout="centered", page_title="Heat Input Master")
+st.set_page_config(layout="centered", page_title="Heat Input Master", page_icon="https://raw.githubusercontent.com/jubailsanghoon/Heatinput/main/db65c0d39f36f2dddc248ea0bf2e4efc.jpg")
 
 st.markdown("""
 <style>

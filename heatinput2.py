@@ -68,15 +68,21 @@ with c_prc:
     process = st.radio("Prc", ["SAW", "FCAW", "SMAW", "GMAW"], horizontal=True, label_visibility="collapsed")
 
 st.markdown('<div class="section-title">WPS Range (kJ/mm)</div>', unsafe_allow_html=True)
-w_cols = st.columns([0.5, 1.5, 0.5, 1.5])
-with w_cols[0]:
-    st.markdown("**Min**")
-with w_cols[1]:
-    min_range = st.number_input("min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
-with w_cols[2]:
-    st.markdown("**Max**")
-with w_cols[3]:
-    max_range = st.number_input("max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
+wps_input_mode = st.radio("WPS Mode", ["Input", "No input"], horizontal=True, label_visibility="collapsed")
+
+if wps_input_mode == "Input":
+    w_cols = st.columns([0.5, 1.5, 0.5, 1.5])
+    with w_cols[0]:
+        st.markdown("**Min**")
+    with w_cols[1]:
+        min_range = st.number_input("min", value=0.96, step=0.01, format="%.2f", label_visibility="collapsed")
+    with w_cols[2]:
+        st.markdown("**Max**")
+    with w_cols[3]:
+        max_range = st.number_input("max", value=2.50, step=0.01, format="%.2f", label_visibility="collapsed")
+else:
+    min_range = None
+    max_range = None
 
 st.write("")
 col_left, col_right = st.columns([1.2, 1])
@@ -98,7 +104,7 @@ with col_left:
 
 k = 1.0 if standard == "AWS" else {"SAW": 1.0, "GMAW": 0.8, "FCAW": 0.8, "SMAW": 0.8}.get(process, 0.8)
 HI = (k * voltage * current * time) / (length * 1000) if length > 0 else 0
-status = "PASS" if min_range <= HI <= max_range else "FAIL"
+status = "PASS" if (min_range is not None and max_range is not None and min_range <= HI <= max_range) else ("FAIL" if (min_range is not None and max_range is not None) else "-")
 
 with col_right:
     st.markdown('<div class="section-title">Live Result</div>', unsafe_allow_html=True)

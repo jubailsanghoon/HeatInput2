@@ -146,7 +146,7 @@ btn_left, btn_gap, btn_right = st.columns([0.475, 0.05, 0.475])
 with btn_left:
     if st.button("Save Data"):
         new_entry = {
-            "Time":       datetime.now().astimezone().strftime("%H:%M:%S"),
+            "Time":       datetime.now().strftime("%H:%M:%S"),
             "Std":        standard,
             "Prc":        process,
             "HI":         round(HI, 3),
@@ -171,7 +171,7 @@ with btn_right:
         st.download_button(
             label="Export",
             data=csv,
-            file_name=f"HI_{datetime.now().astimezone().strftime('%m%d_%H%M')}.csv",
+            file_name=f"HI_{datetime.now().strftime('%m%d_%H%M')}.csv",
             mime="text/csv"
         )
     else:

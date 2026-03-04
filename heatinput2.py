@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import streamlit.components.v1 as components
+import json, base64, zlib
 
 st.set_page_config(
     layout="centered",
@@ -73,6 +74,41 @@ DEFAULT_WELDERS = [
     {"welder_no":"Welder003","name":"Im Kkeok-jeong", "dept":"Welding Dept."},
 ]
 
+# ── Persistence helpers ──────────────────────────────────────────────────────
+STORAGE_KEY = "hi_history_v1"
+
+def encode_history(hist):
+    """Compress history list → URL-safe base64 string."""
+    try:
+        raw = json.dumps(hist, ensure_ascii=False)
+        return base64.urlsafe_b64encode(zlib.compress(raw.encode())).decode()
+    except Exception:
+        return ""
+
+def decode_history(s):
+    """Decode compressed history string → list."""
+    try:
+        return json.loads(zlib.decompress(base64.urlsafe_b64decode(s.encode())).decode())
+    except Exception:
+        return []
+
+def save_history_to_params(hist):
+    """Persist history into query params."""
+    try:
+        st.query_params[STORAGE_KEY] = encode_history(hist)
+    except Exception:
+        pass
+
+def load_history_from_params():
+    """Load history from query params (survives refresh/restart)."""
+    try:
+        encoded = st.query_params.get(STORAGE_KEY, "")
+        if encoded:
+            return decode_history(encoded)
+    except Exception:
+        pass
+    return []
+
 DEFAULTS = {
     'history': [],
     'wps_presets': None,
@@ -89,10 +125,18 @@ DEFAULTS = {
     'show_wps_list': False,
     'show_welder_list': False,
     'manual_lang': "EN",
+    '_history_loaded': False,
 }
 for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+# Restore history from URL on first run (survives page refresh & server restart)
+if not st.session_state._history_loaded:
+    restored = load_history_from_params()
+    if restored:
+        st.session_state.history = restored
+    st.session_state._history_loaded = True
 
 def get_presets():
     return st.session_state.wps_presets if st.session_state.wps_presets is not None else DEFAULT_PRESETS
@@ -517,11 +561,22 @@ if save_clicked:
             "WPS No.": wps_no, "Welder No.": welder_no,
             "Joint No.": joint_no, "Dep't": dept, "Pass": pass_type,
         })
+        save_history_to_params(st.session_state.history)
         st.rerun()
 
 # ─── 7. History ──────────────────────────────────────────────────────────────
 if st.session_state.history:
-    st.markdown('<div class="section-title">Recent History</div>', unsafe_allow_html=True)
+    hdr1, hdr2 = st.columns([3, 1])
+    with hdr1:
+        st.markdown('<div class="section-title">Recent History</div>', unsafe_allow_html=True)
+    with hdr2:
+        if st.button("🗑 Clear History", key="clear_history"):
+            st.session_state.history = []
+            try:
+                del st.query_params[STORAGE_KEY]
+            except Exception:
+                pass
+            st.rerun()
     df = pd.DataFrame(st.session_state.history)
 
     def style_history(df):

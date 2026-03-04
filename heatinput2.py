@@ -292,22 +292,34 @@ elif wps_mode == "Preset":
 
     if st.session_state.show_wps_list:
         st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-        wps_opts = [f"{x['wps_no']} | {x['pass']} | {x['hi_min']} ~ {x['hi_max']}" for x in presets]
+        wps_opts = ["✏️ Manual Input"] + [f"{x['wps_no']} | {x['pass']} | {x['hi_min']} ~ {x['hi_max']}" for x in presets]
         wps_sel = st.selectbox("WPS", wps_opts, label_visibility="collapsed", key="wps_sel_box")
         bc1, bc2 = st.columns([1, 1])
         with bc1:
             if st.button("✔ Apply WPS", key="wps_apply"):
-                i = wps_opts.index(wps_sel)
-                st.session_state.preset_min = presets[i]["hi_min"]
-                st.session_state.preset_max = presets[i]["hi_max"]
-                st.session_state.preset_label = f"{presets[i]['wps_no']} / {presets[i]['pass']}"
-                st.session_state.preset_wps_no = presets[i]["wps_no"]
-                st.session_state.show_wps_list = False
-                st.rerun()
+                if wps_sel == "✏️ Manual Input":
+                    st.session_state.preset_min = None
+                    st.session_state.preset_max = None
+                    st.session_state.preset_label = ""
+                    st.session_state.preset_wps_no = ""
+                    st.session_state.show_wps_list = False
+                    # Switch mode to Manual
+                    st.session_state._force_wps_manual = True
+                    st.rerun()
+                else:
+                    i = wps_opts.index(wps_sel) - 1  # offset for Manual Input row
+                    st.session_state.preset_min = presets[i]["hi_min"]
+                    st.session_state.preset_max = presets[i]["hi_max"]
+                    st.session_state.preset_label = f"{presets[i]['wps_no']} / {presets[i]['pass']}"
+                    st.session_state.preset_wps_no = presets[i]["wps_no"]
+                    st.session_state.show_wps_list = False
+                    st.rerun()
         with bc2:
             if st.button("✖ Close WPS List", key="btn_close_wps"):
                 st.session_state.show_wps_list = False
                 st.rerun()
+        if wps_sel == "✏️ Manual Input":
+            st.caption("ℹ️ Manual Input selected — Min/Max will be entered directly in WPS Range.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     min_range = st.session_state.preset_min
@@ -405,20 +417,28 @@ if st.button(wld_list_label, key="wld_list_toggle"):
 
 if st.session_state.show_welder_list:
     st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-    wld_opts = [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
+    wld_opts = ["✏️ Manual Input"] + [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
     wld_sel = st.selectbox("Welder", wld_opts, label_visibility="collapsed", key="wld_sel_box")
     wc1, wc2 = st.columns([1, 1])
     with wc1:
         if st.button("✔ Apply Welder", key="wld_apply"):
-            i = wld_opts.index(wld_sel)
-            st.session_state.preset_welder_no = welders[i]["welder_no"]
-            st.session_state.preset_welder_name = welders[i]["name"]
-            st.session_state.show_welder_list = False
-            st.rerun()
+            if wld_sel == "✏️ Manual Input":
+                st.session_state.preset_welder_no = ""
+                st.session_state.preset_welder_name = ""
+                st.session_state.show_welder_list = False
+                st.rerun()
+            else:
+                i = wld_opts.index(wld_sel) - 1  # offset for Manual Input row
+                st.session_state.preset_welder_no = welders[i]["welder_no"]
+                st.session_state.preset_welder_name = welders[i]["name"]
+                st.session_state.show_welder_list = False
+                st.rerun()
     with wc2:
         if st.button("✖ Close Welder List", key="btn_close_wld"):
             st.session_state.show_welder_list = False
             st.rerun()
+    if wld_sel == "✏️ Manual Input":
+        st.caption("ℹ️ Manual Input selected — enter Welder No. directly in the field below.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # 4 input columns

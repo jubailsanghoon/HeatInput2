@@ -294,20 +294,33 @@ elif wps_mode == "Preset":
         st.markdown('<div class="panel-box">', unsafe_allow_html=True)
         wps_opts = ["✏️ Manual Input"] + [f"{x['wps_no']} | {x['pass']} | {x['hi_min']} ~ {x['hi_max']}" for x in presets]
         wps_sel = st.selectbox("WPS", wps_opts, label_visibility="collapsed", key="wps_sel_box")
+
+        # Inline input fields shown when Manual Input is selected
+        if wps_sel == "✏️ Manual Input":
+            st.caption("Enter WPS No., Min and Max directly:")
+            mi_cols = st.columns([1.2, 0.9, 0.9])
+            with mi_cols[0]:
+                manual_wps_no_inline = st.text_input("WPS No.", placeholder="WPS No.", key="wps_manual_no_inline")
+            with mi_cols[1]:
+                manual_min_inline = st.number_input("Min (kJ/mm)", value=0.80, step=0.01, format="%.2f", key="wps_manual_min_inline")
+            with mi_cols[2]:
+                manual_max_inline = st.number_input("Max (kJ/mm)", value=2.50, step=0.01, format="%.2f", key="wps_manual_max_inline")
+
         bc1, bc2 = st.columns([1, 1])
         with bc1:
             if st.button("✔ Apply WPS", key="wps_apply"):
                 if wps_sel == "✏️ Manual Input":
-                    st.session_state.preset_min = None
-                    st.session_state.preset_max = None
-                    st.session_state.preset_label = ""
-                    st.session_state.preset_wps_no = ""
+                    mn = st.session_state.get("wps_manual_min_inline", 0.80)
+                    mx = st.session_state.get("wps_manual_max_inline", 2.50)
+                    wno = st.session_state.get("wps_manual_no_inline", "")
+                    st.session_state.preset_min = mn
+                    st.session_state.preset_max = mx
+                    st.session_state.preset_wps_no = wno
+                    st.session_state.preset_label = f"{wno} / Manual" if wno else "Manual"
                     st.session_state.show_wps_list = False
-                    # Switch mode to Manual
-                    st.session_state._force_wps_manual = True
                     st.rerun()
                 else:
-                    i = wps_opts.index(wps_sel) - 1  # offset for Manual Input row
+                    i = wps_opts.index(wps_sel) - 1
                     st.session_state.preset_min = presets[i]["hi_min"]
                     st.session_state.preset_max = presets[i]["hi_max"]
                     st.session_state.preset_label = f"{presets[i]['wps_no']} / {presets[i]['pass']}"
@@ -318,8 +331,6 @@ elif wps_mode == "Preset":
             if st.button("✖ Close WPS List", key="btn_close_wps"):
                 st.session_state.show_wps_list = False
                 st.rerun()
-        if wps_sel == "✏️ Manual Input":
-            st.caption("ℹ️ Manual Input selected — Min/Max will be entered directly in WPS Range.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     min_range = st.session_state.preset_min
@@ -419,16 +430,28 @@ if st.session_state.show_welder_list:
     st.markdown('<div class="panel-box">', unsafe_allow_html=True)
     wld_opts = ["✏️ Manual Input"] + [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
     wld_sel = st.selectbox("Welder", wld_opts, label_visibility="collapsed", key="wld_sel_box")
+
+    # Inline input fields shown when Manual Input is selected
+    if wld_sel == "✏️ Manual Input":
+        st.caption("Enter Welder info directly:")
+        wmi_cols = st.columns([1, 1, 1])
+        with wmi_cols[0]:
+            manual_welder_no_inline = st.text_input("Welder No.", placeholder="Welder No.", key="wld_manual_no_inline")
+        with wmi_cols[1]:
+            manual_welder_name_inline = st.text_input("Name", placeholder="Name", key="wld_manual_name_inline")
+        with wmi_cols[2]:
+            manual_welder_dept_inline = st.text_input("Dep't", placeholder="Dep't", key="wld_manual_dept_inline")
+
     wc1, wc2 = st.columns([1, 1])
     with wc1:
         if st.button("✔ Apply Welder", key="wld_apply"):
             if wld_sel == "✏️ Manual Input":
-                st.session_state.preset_welder_no = ""
-                st.session_state.preset_welder_name = ""
+                st.session_state.preset_welder_no = st.session_state.get("wld_manual_no_inline", "")
+                st.session_state.preset_welder_name = st.session_state.get("wld_manual_name_inline", "")
                 st.session_state.show_welder_list = False
                 st.rerun()
             else:
-                i = wld_opts.index(wld_sel) - 1  # offset for Manual Input row
+                i = wld_opts.index(wld_sel) - 1
                 st.session_state.preset_welder_no = welders[i]["welder_no"]
                 st.session_state.preset_welder_name = welders[i]["name"]
                 st.session_state.show_welder_list = False
@@ -437,8 +460,6 @@ if st.session_state.show_welder_list:
         if st.button("✖ Close Welder List", key="btn_close_wld"):
             st.session_state.show_welder_list = False
             st.rerun()
-    if wld_sel == "✏️ Manual Input":
-        st.caption("ℹ️ Manual Input selected — enter Welder No. directly in the field below.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # 4 input columns
@@ -487,4 +508,32 @@ if save_clicked:
 # ─── 7. History ──────────────────────────────────────────────────────────────
 if st.session_state.history:
     st.markdown('<div class="section-title">Recent History</div>', unsafe_allow_html=True)
-    st.dataframe(pd.DataFrame(st.session_state.history), use_container_width=True)
+    df = pd.DataFrame(st.session_state.history)
+
+    def style_history(df):
+        def row_color(row):
+            if row.get("Res") == "PASS":
+                bg = "background-color:#e8f5e9; color:#000000;"
+            elif row.get("Res") == "FAIL":
+                bg = "background-color:#fff3e0; color:#000000;"
+            else:
+                bg = "background-color:#ffffff; color:#000000;"
+            return [bg] * len(row)
+        return df.style.apply(row_color, axis=1).set_table_styles([
+            {"selector": "thead th",
+             "props": [("background-color","#f0f0f0"),("color","#000000"),
+                       ("font-weight","bold"),("border","1px solid #cccccc"),
+                       ("text-align","center")]},
+            {"selector": "tbody td",
+             "props": [("border","1px solid #e0e0e0"),("text-align","center"),
+                       ("font-size","13px")]},
+            {"selector": "table",
+             "props": [("border-collapse","collapse"),("width","100%"),
+                       ("background-color","#ffffff")]},
+        ])
+
+    st.dataframe(
+        style_history(df),
+        use_container_width=True,
+        hide_index=True,
+    )

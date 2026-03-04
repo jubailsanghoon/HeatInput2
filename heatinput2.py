@@ -32,6 +32,20 @@ st.markdown("""
     [data-testid="stFileUploader"] section { background-color:#ffffff !important; border:1px dashed #aaaaaa !important; padding:6px !important; min-height:unset !important; }
     [data-testid="stFileUploaderDropzoneInstructions"] { display:none !important; }
     [data-testid="stFileUploader"] button { background-color:#f0f0f0 !important; color:#000000 !important; border:1px solid #cccccc !important; height:auto !important; font-size:13px !important; padding:4px 10px !important; }
+
+    /* ── Dataframe toolbar: white theme ── */
+    [data-testid="stElementToolbar"] {
+        background-color:#f5f5f5 !important;
+        border:1px solid #cccccc !important;
+        border-radius:8px !important;
+        box-shadow:0 1px 4px rgba(0,0,0,0.12) !important;
+    }
+    [data-testid="stElementToolbarButton"] { color:#333333 !important; background:transparent !important; }
+    [data-testid="stElementToolbarButton"]:hover { background-color:#e0e0e0 !important; color:#000 !important; border-radius:4px !important; }
+    [data-testid="stElementToolbarButton"] svg { fill:#333333 !important; stroke:#333333 !important; }
+    /* Dataframe body white background */
+    [data-testid="stDataFrame"] { background-color:#ffffff !important; }
+    [data-testid="stDataFrame"] > div { background-color:#ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -292,11 +306,11 @@ elif wps_mode == "Preset":
 
     if st.session_state.show_wps_list:
         st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-        wps_opts = ["✏️ Manual Input"] + [f"{x['wps_no']} | {x['pass']} | {x['hi_min']} ~ {x['hi_max']}" for x in presets]
+        wps_opts = ["Manual Input"] + [f"{x['wps_no']} | {x['pass']} | {x['hi_min']} ~ {x['hi_max']}" for x in presets]
         wps_sel = st.selectbox("WPS", wps_opts, label_visibility="collapsed", key="wps_sel_box")
 
         # Inline input fields shown when Manual Input is selected
-        if wps_sel == "✏️ Manual Input":
+        if wps_sel == "Manual Input":
             st.caption("Enter WPS No., Min and Max directly:")
             mi_cols = st.columns([1.2, 0.9, 0.9])
             with mi_cols[0]:
@@ -309,7 +323,7 @@ elif wps_mode == "Preset":
         bc1, bc2 = st.columns([1, 1])
         with bc1:
             if st.button("✔ Apply WPS", key="wps_apply"):
-                if wps_sel == "✏️ Manual Input":
+                if wps_sel == "Manual Input":
                     mn = st.session_state.get("wps_manual_min_inline", 0.80)
                     mx = st.session_state.get("wps_manual_max_inline", 2.50)
                     wno = st.session_state.get("wps_manual_no_inline", "")
@@ -428,11 +442,11 @@ if st.button(wld_list_label, key="wld_list_toggle"):
 
 if st.session_state.show_welder_list:
     st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-    wld_opts = ["✏️ Manual Input"] + [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
+    wld_opts = ["Manual Input"] + [f"{w['welder_no']} | {w['name']} | {w.get('dept','')}" for w in welders]
     wld_sel = st.selectbox("Welder", wld_opts, label_visibility="collapsed", key="wld_sel_box")
 
     # Inline input fields shown when Manual Input is selected
-    if wld_sel == "✏️ Manual Input":
+    if wld_sel == "Manual Input":
         st.caption("Enter Welder info directly:")
         wmi_cols = st.columns([1, 1, 1])
         with wmi_cols[0]:
@@ -445,7 +459,7 @@ if st.session_state.show_welder_list:
     wc1, wc2 = st.columns([1, 1])
     with wc1:
         if st.button("✔ Apply Welder", key="wld_apply"):
-            if wld_sel == "✏️ Manual Input":
+            if wld_sel == "Manual Input":
                 st.session_state.preset_welder_no = st.session_state.get("wld_manual_no_inline", "")
                 st.session_state.preset_welder_name = st.session_state.get("wld_manual_name_inline", "")
                 st.session_state.show_welder_list = False
